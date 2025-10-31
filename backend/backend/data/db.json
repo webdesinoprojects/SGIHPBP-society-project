@@ -1,0 +1,167 @@
+{
+  "testimonials": [],
+  "content": {
+    "hero_title": "Welcome to the Society of Gastrointestinal & Hepato-Pancreatobiliary Pathologists of India (SGIHPBPs)",
+    "hero_subtitle": "Fostering excellence in the field of GI & HPB pathology through education, research, and collaboration.",
+    "mission_text": "To promote and advance the knowledge, practice, and research in the field of Gastrointestinal and Hepato-Pancreatobiliary pathology across India. We are dedicated to creating a community of professionals committed to high standards of patient care, ethical practice, and continuous learning.",
+    "president_name": "Prof Puja Sakhuja",
+    "president_message": "Welcome to the official portal of our esteemed society. It is an honor to lead this community of dedicated pathologists. Our collective vision is to elevate the standards of GI and HPB pathology in India, fostering an environment of learning, research, and professional growth. I encourage you to join us in this noble pursuit.",
+    "secretary_name": "Prof Prasenjit Das",
+    "secretary_message": "It is with great pleasure that I welcome you to our official website. As a society, we are committed to pushing the boundaries of knowledge in GI and HPB pathology. This platform is a testament to our dedication to collaboration, education, and innovation. We invite you to explore, engage, and be a part of our growing community.",
+    "vision_text": "Our vision is to create a future where knowledge and understanding of Gastrointestinal and Hepatobiliary disorders are widespread, and where patients receive the highest quality care through a well-trained and informed network of professionals.",
+    "contact_office_name": "SGIHPBPs Registered Office",
+    "contact_address": "Department of Pathology, Tata Memorial Hospital, Parel, Mumbai, Maharashtra, 400012",
+    "contact_phone": "+91 22 2417 7000",
+    "contact_email": "contact@sgihpbps.org"
+  },
+  "contacts": [
+    {
+      "id": "KZW4gwYy_eaEUwwtNktbE",
+      "name": "test",
+      "email": "test@gmail.com",
+      "subject": "society",
+      "message": "society",
+      "createdAt": "2025-10-31T18:17:58.993Z",
+      "status": "read"
+    },
+    {
+      "id": "zvGIKTboin3RRDs-LmeOv",
+      "name": "abc",
+      "email": "xyz@gmail.com",
+      "subject": "abcdefg",
+      "message": "abcdefg",
+      "createdAt": "2025-10-31T22:05:00.056Z",
+      "status": "unread"
+    }
+  ],
+  "membershipApplications": [],
+  "events": [
+    {
+      "id": "evt_001",
+      "title": "Annual National Conference 2024",
+      "description": "Join us for our flagship annual conference featuring the latest advances in GI and HPB pathology.",
+      "date": "2024-12-14T09:00:00.000Z",
+      "endDate": "2024-12-14T17:00:00.000Z",
+      "location": "New Delhi, India",
+      "type": "conference",
+      "registrationUrl": "https://example.com/register",
+      "isRegistrationOpen": true,
+      "maxAttendees": 500,
+      "currentAttendees": 0,
+      "tags": [
+        "pathology",
+        "conference",
+        "CME"
+      ],
+      "status": "active",
+      "createdAt": "2025-10-31T18:15:07.150Z",
+      "updatedAt": "2025-10-31T18:15:07.165Z"
+    },
+    {
+      "id": "evt_002",
+      "title": "GI Pathology Update Workshop",
+      "description": "An intensive workshop covering recent developments in gastrointestinal pathology.",
+      "date": "2024-11-20T14:00:00.000Z",
+      "endDate": "2024-11-20T18:00:00.000Z",
+      "location": "Online / Virtual",
+      "type": "workshop",
+      "registrationUrl": "",
+      "isRegistrationOpen": true,
+      "maxAttendees": 200,
+      "currentAttendees": 0,
+      "tags": [
+        "pathology",
+        "workshop",
+        "online"
+      ],
+      "status": "active",
+      "createdAt": "2025-10-31T18:15:07.165Z",
+      "updatedAt": "2025-10-31T18:15:07.165Z"
+    }
+  ],
+  "publications": [
+    {
+      "id": "pub_001",
+      "title": "Consensus Guidelines for the Pathological Diagnosis of Autoimmune Hepatitis",
+      "description": "A comprehensive set of guidelines developed by a panel of experts to standardize the diagnostic criteria for autoimmune hepatitis across India.",
+      "authors": [
+        "Dr. Anjali Mehta",
+        "Dr. Rohan Sharma"
+      ],
+      "category": "Clinical Guideline",
+      "year": 2023,
+      "journal": "Indian Journal of Pathology",
+      "doi": "",
+      "pdfUrl": "",
+      "externalUrl": "",
+      "imageUrl": "https://lh3.googleusercontent.com/aida-public/AB6AXuBtL4Fj5ovKJNz6sb6QWdjUWd_Z75xpVb-0_nZPigBu5p698E5ZD2HPSep4hCjfD-cR3yqAzdkpowvrtWS2LNY-0MzX4JCxHPNOr1Zam8E8v7jizFMGLNv5bE-5wC_81vvf_bP_At1JV84vF31mVh6VKXlJVDRzj8j9x5UdtIHYtsia0Xjf_r-2r-eFCLrcX0v5Vlf6p7mCNPYuHWv645hOCUcBX4zONCDYwAzRR6l88XHbkeElSs4dR5XPpaA5zSokVK3YhpsPsg",
+      "tags": [
+        "hepatitis",
+        "guidelines",
+        "autoimmune"
+      ],
+      "featured": true,
+      "downloadCount": 0,
+      "viewCount": 0,
+      "publishedAt": "2023-06-15T00:00:00.000Z",
+      "createdAt": "2025-10-31T18:15:07.166Z",
+      "updatedAt": "2025-10-31T18:15:07.166Z"
+    },
+    {
+      "id": "pub_002",
+      "title": "Molecular Subtyping of Hepatocellular Carcinoma: An Indian Cohort Study",
+      "description": "This research provides new insights into the genetic landscape of hepatocellular carcinoma within the Indian population, identifying key mutations.",
+      "authors": [
+        "Dr. Priya Singh",
+        "Dr. Vikram Rao"
+      ],
+      "category": "Research Paper",
+      "year": 2022,
+      "journal": "Asian Pacific Journal of Cancer Research",
+      "doi": "10.1000/xyz123",
+      "pdfUrl": "",
+      "externalUrl": "",
+      "imageUrl": "https://lh3.googleusercontent.com/aida-public/AB6AXuAfSBcIqdVqpn1SiQm2xJDwLb3Zlfjctzy_MyBhfD8m9y9EsPuLYUvKGdcim-5yhVr19vJhOnsxwxeaFZGTln08NfQKXp76HgJJHDaoxJ-XwcjByW5EdTZcva0VKMwl5dS4jJ8KmGdZrr914RxKNJ5bcjhiFWXwAa-9dcAvJpXY5HlqsdChlEFLKmXcM5jOCihUgSbIgjdHBsvK4OxsRkb1QLK3GHz2CT9I5sBRIFclA5xe98BS_3BRCg3cuApnIT7S6gdROzrFzg",
+      "tags": [
+        "hepatocellular",
+        "carcinoma",
+        "molecular",
+        "genetics"
+      ],
+      "featured": true,
+      "downloadCount": 0,
+      "viewCount": 0,
+      "publishedAt": "2022-11-30T00:00:00.000Z",
+      "createdAt": "2025-10-31T18:15:07.166Z",
+      "updatedAt": "2025-10-31T18:15:07.166Z"
+    },
+    {
+      "id": "pub_003",
+      "title": "The Role of Biopsy in the Management of Pancreatic Cysts",
+      "description": "An educational review discussing the indications, techniques, and diagnostic yield of endoscopic ultrasound-guided fine-needle aspiration for pancreatic cysts.",
+      "authors": [
+        "Dr. Sanjay Gupta"
+      ],
+      "category": "Educational Article",
+      "year": 2021,
+      "journal": "Gastroenterology Review",
+      "doi": "",
+      "pdfUrl": "",
+      "externalUrl": "",
+      "imageUrl": "https://lh3.googleusercontent.com/aida-public/AB6AXuDjAb8ctCHdD78sZTyZBUyK6FAnppEPD7LBNkAuwIXMxSroorOwGC45HPlO_xjtxbXUy7t4NY_TunBbLKL0X_K7DdQWWbuBG7jYf9HpgQbOZ-_tM7AxAFcNUwZA7yOEtWns-6Z3fS-9PUV1zKydAC74rnb8kkfjbZyff1SkfBhVJQBFPqfWuYze0lgnSuw_p4vQ0hqhYUm3KXGfsnnRbU8_yWEdx7-l3lbNmogd521-oY5-XOlA6g2dfQ3kR5jKenKVWv5H1KlX5A",
+      "tags": [
+        "pancreatic",
+        "cysts",
+        "biopsy",
+        "endoscopic"
+      ],
+      "featured": false,
+      "downloadCount": 0,
+      "viewCount": 0,
+      "publishedAt": "2021-08-20T00:00:00.000Z",
+      "createdAt": "2025-10-31T18:15:07.166Z",
+      "updatedAt": "2025-10-31T18:15:07.166Z"
+    }
+  ],
+  "eventRegistrations": []
+}
