@@ -1,9 +1,19 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Logo from '../../assets/Logo_SGIHPBPS.png'
 
 const Header = ({ currentPage }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+
+  useEffect(() => {
+    if (isMenuOpen) {
+      // When menu is open, add class to body to prevent scrolling
+      document.body.classList.add('overflow-hidden')
+    } else {
+      // When menu is closed, remove the class
+      document.body.classList.remove('overflow-hidden')
+    }
+  }, [isMenuOpen])
 
   return (
     <header className="bg-white/80 dark:bg-primary/80 backdrop-blur-sm sticky top-0 z-50 shadow-md">
