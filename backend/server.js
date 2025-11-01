@@ -15,7 +15,7 @@ dotenv.config()
 
 const app = express()
 const PORT = process.env.PORT || 4000
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173'
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'https://sgihpbp-society-project.vercel.app/' ||'http://localhost:5173'
 
 app.use(express.json())
 app.use(cors({ origin: FRONTEND_ORIGIN }))
