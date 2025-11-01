@@ -108,69 +108,69 @@ const Header = ({ currentPage }) => {
           <div className="px-4 py-2 space-y-1">
             <Link
               to="/"
-              className={`block w-full text-left py-2 font-semibold transition-colors ${currentPage === 'home' ? 'text-gold-DEFAULT dark:text-gold-light' : 'text-gray-800 dark:text-white'}`}
+              className={`block w-full text-center py-2 font-semibold transition-colors ${currentPage === 'home' ? 'text-gold-DEFAULT dark:text-gold-light' : 'text-gray-800 dark:text-white'}`}
               onClick={() => setIsMenuOpen(false)}
             >
               Home
             </Link>
             <Link
               to="/about-us"
-              className={`block w-full text-left py-2 font-semibold transition-colors ${currentPage === 'about-us' ? 'text-gold-DEFAULT dark:text-gold-light' : 'text-gray-800 dark:text-white'}`}
+              className={`block w-full text-center py-2 font-semibold transition-colors ${currentPage === 'about-us' ? 'text-gold-DEFAULT dark:text-gold-light' : 'text-gray-800 dark:text-white'}`}
               onClick={() => setIsMenuOpen(false)}
             >
               About Us
             </Link>
             <Link
               to="/governing-body"
-              className={`block w-full text-left py-2 font-semibold transition-colors ${currentPage === 'governing-body' ? 'text-gold-DEFAULT dark:text-gold-light' : 'text-gray-800 dark:text-white'}`}
+              className={`block w-full text-center py-2 font-semibold transition-colors ${currentPage === 'governing-body' ? 'text-gold-DEFAULT dark:text-gold-light' : 'text-gray-800 dark:text-white'}`}
               onClick={() => setIsMenuOpen(false)}
             >
               Governing Body
             </Link>
             <Link
               to="/president-message"
-              className={`block w-full text-left py-2 font-semibold transition-colors ${currentPage === 'president-message' ? 'text-gold-DEFAULT dark:text-gold-light' : 'text-gray-800 dark:text-white'}`}
+              className={`block w-full text-center py-2 font-semibold transition-colors ${currentPage === 'president-message' ? 'text-gold-DEFAULT dark:text-gold-light' : 'text-gray-800 dark:text-white'}`}
               onClick={() => setIsMenuOpen(false)}
             >
               President's Message
             </Link>
             <Link
               to="/secretary-message"
-              className={`block w-full text-left py-2 font-semibold transition-colors ${currentPage === 'secretary-message' ? 'text-gold-DEFAULT dark:text-gold-light' : 'text-gray-800 dark:text-white'}`}
+              className={`block w-full text-center py-2 font-semibold transition-colors ${currentPage === 'secretary-message' ? 'text-gold-DEFAULT dark:text-gold-light' : 'text-gray-800 dark:text-white'}`}
               onClick={() => setIsMenuOpen(false)}
             >
               Secretary General's Message
             </Link>
             <Link
               to="/membership"
-              className={`block w-full text-left py-2 font-semibold transition-colors ${currentPage === 'membership' ? 'text-gold-DEFAULT dark:text-gold-light' : 'text-gray-800 dark:text-white'}`}
+              className={`block w-full text-center py-2 font-semibold transition-colors ${currentPage === 'membership' ? 'text-gold-DEFAULT dark:text-gold-light' : 'text-gray-800 dark:text-white'}`}
               onClick={() => setIsMenuOpen(false)}
             >
               Membership
             </Link>
             <Link
               to="/academics-events"
-              className={`block w-full text-left py-2 font-semibold transition-colors ${currentPage === 'academics-events' ? 'text-gold-DEFAULT dark:text-gold-light' : 'text-gray-800 dark:text-white'}`}
+              className={`block w-full text-center py-2 font-semibold transition-colors ${currentPage === 'academics-events' ? 'text-gold-DEFAULT dark:text-gold-light' : 'text-gray-800 dark:text-white'}`}
               onClick={() => setIsMenuOpen(false)}
             >
               Academics & Events
             </Link>
             <Link
               to="/publications"
-              className={`block w-full text-left py-2 font-semibold transition-colors ${currentPage === 'publications' ? 'text-gold-DEFAULT dark:text-gold-light' : 'text-gray-800 dark:text-white'}`}
+              className={`block w-full text-center py-2 font-semibold transition-colors ${currentPage === 'publications' ? 'text-gold-DEFAULT dark:text-gold-light' : 'text-gray-800 dark:text-white'}`}
               onClick={() => setIsMenuOpen(false)}
             >
               Publications
             </Link>
             <Link
               to="/contact-us"
-              className={`block w-full text-left py-2 font-semibold transition-colors ${currentPage === 'contact-us' ? 'text-gold-DEFAULT dark:text-gold-light' : 'text-gray-800 dark:text-white'}`}
+              className={`block w-full text-center py-2 font-semibold transition-colors ${currentPage === 'contact-us' ? 'text-gold-DEFAULT dark:text-gold-light' : 'text-gray-800 dark:text-white'}`}
               onClick={() => setIsMenuOpen(false)}
             >
               Contact Us
             </Link>
             {/* <button
-              className={`block w-full text-left py-2 font-semibold transition-colors ${currentPage === 'admin' ? 'text-gold-DEFAULT dark:text-gold-light' : 'text-gray-800 dark:text-white'}`}
+              className={`block w-full text-center py-2 font-semibold transition-colors ${currentPage === 'admin' ? 'text-gold-DEFAULT dark:text-gold-light' : 'text-gray-800 dark:text-white'}`}
               onClick={() => { setCurrentPage('admin'); setIsMenuOpen(false); }}
             >
               Admin
