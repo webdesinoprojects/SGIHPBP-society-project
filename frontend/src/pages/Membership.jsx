@@ -122,7 +122,7 @@ const Membership = () => {
                     <h3 className="text-2xl font-display font-semibold text-primary mb-4">
                       Life Membership
                     </h3>
-                    <p className="text-gray-600 dark:text-gray-400 mb-6 flex-grow">
+                    <p className="text-gray-600 dark:text-gray-400 mb-6 flex-grow text-justify">
                       A one-time fee for lifetime access to all member benefits, publications, and events at a reduced rate.
                     </p>
                     <div className="mt-auto">
@@ -140,7 +140,7 @@ const Membership = () => {
                     <h3 className="text-2xl font-display font-semibold text-primary mb-4">
                       Ad Hoc Membership
                     </h3>
-                    <p className="text-gray-600 dark:text-gray-400 mb-6 flex-grow">
+                    <p className="text-gray-600 dark:text-gray-400 mb-6 flex-grow text-justify">
                       A temporary membership for specific events or a limited duration, ideal for trainees and international delegates.
                     </p>
                     <div className="mt-auto">
