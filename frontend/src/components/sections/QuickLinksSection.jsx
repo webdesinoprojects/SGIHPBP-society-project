@@ -62,7 +62,7 @@ const QuickLinksSection = () => {
               <h3 className="font-display text-2xl font-bold text-primary dark:text-white mb-4">
                 {item.title}
               </h3>
-              <p className="text-gray-600 dark:text-gray-300 mb-6 text-center">
+              <p className="text-gray-600 dark:text-gray-300 mb-6 text-justify md:text-center hyphens-auto">
                 {item.description}
               </p>
               <Link to={item.link} className="font-bold text-primary dark:text-gold-light hover:underline">
