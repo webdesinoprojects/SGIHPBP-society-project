@@ -153,7 +153,8 @@ const Publications = () => {
                 }}
                 className="flex h-12 w-full sm:w-auto shrink-0 items-center justify-between gap-x-2 rounded-lg border border-border-light bg-white px-4 dark:border-border-dark dark:bg-background-dark"
               >
-                <p className="text-sm font-medium text-text-light dark:text-text-dark">Category: {selectedCategory}</p>
+                <p className="text-sm font-medium text-text-light dark:text-text-dark">
+                  { selectedCategory === 'All' ? 'Category: All' : `${selectedCategory}` }</p>
                 <motion.span 
                   className="material-symbols-outlined text-text-muted-light dark:text-text-muted-dark"
                   animate={{ rotate: isDropdownOpen ? 180 : 0 }}
