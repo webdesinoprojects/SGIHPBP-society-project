@@ -205,7 +205,7 @@ const Publications = () => {
                 >
                   <div className="w-full rounded-lg bg-gray-200 dark:bg-gray-700 md:w-1/3 md:max-w-xs flex-shrink-0">
                     <img 
-                      className="w-full h-48 md:h-full object-contain rounded-lg" 
+                      className="w-full h-48 md:h-48 object-contain rounded-lg" 
                       alt={`${pub.title} placeholder`} 
                       src={pub.imageUrl}
                     />
