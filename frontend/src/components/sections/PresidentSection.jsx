@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import DrPujaSakhuja from '../../assets/Dr-Puja-Sakhuja,-President.jpg';
 
 const PresidentSection = () => {
   return (
@@ -21,7 +22,7 @@ const PresidentSection = () => {
           >
             <img 
               className="w-64 h-64 rounded-full mx-auto object-contain border-4 border-gold shadow-xl" 
-              // src={DrPujaSakhuja}
+              src={DrPujaSakhuja}
             />
             <h3 className="font-display text-2xl font-bold text-primary dark:text-white mt-6">
               Prof Puja Sakhuja
