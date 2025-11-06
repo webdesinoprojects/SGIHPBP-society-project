@@ -202,9 +202,9 @@ const Publications = () => {
                   className="flex flex-col items-stretch gap-6 overflow-hidden rounded-xl border border-border-light bg-white p-6 transition-shadow duration-300 hover:shadow-lg dark:border-border-dark dark:bg-background-dark/50 dark:hover:shadow-accent/10 md:flex-row"
                   variants={itemVariants}
                 >
-                  <div className="w-full rounded-lg bg-gray-200 dark:bg-gray-700 md:w-1/3">
+                  <div className="w-full rounded-lg bg-gray-200 dark:bg-gray-700 md:w-1/3 md:max-w-xs flex-shrink-0">
                     <img 
-                      className="h-full w-full object-cover aspect-video md:aspect-auto rounded-lg" 
+                      className="w-full h-48 md:h-full object-contain rounded-lg" 
                       alt={`${pub.title} placeholder`} 
                       src={pub.imageUrl}
                     />
