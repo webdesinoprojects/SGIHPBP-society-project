@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import Layout from '../components/Layout';
 import { motion } from 'framer-motion'; // Removed AnimatePresence
+import textbookImage from '../assets/textbook.png'
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -30,7 +31,7 @@ const allPublications = [
     href: 'https://link.springer.com/book/10.1007/978-981-16-6395-6',
     linkText: 'View on Springer',
     linkIcon: 'open_in_new',
-    imageUrl: 'https://placehold.co/600x400/0d1b2a/e0e1dd?text=Textbook'
+    imageUrl: textbookImage
   },
   {
     id: 2,
