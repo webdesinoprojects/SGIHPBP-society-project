@@ -116,7 +116,7 @@ const Footer = () => {
                 78, LD Block, PITAMPURA,<br />New Delhi-110034
               </li>
               <li className="text-gray-300">
-                Email: <a href="mailto:contact@sgihpbps.org" className="text-gold-light hover:underline">contact@sgihpbps.org</a>
+                Email: <a href="mailto:sgihpbpsindia2025@gmail.com" className="text-gold-light hover:underline">sgihpbpsindia2025@gmail.com</a>
               </li>
               <li className="text-gray-300">
                 Phone: <a href="tel:+919873898110" className="text-gold-light hover:underline">9873898110</a>

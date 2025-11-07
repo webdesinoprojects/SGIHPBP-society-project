@@ -19,7 +19,7 @@ const ContactUs = () => {
     officeName: 'SGIHPBPs Registered Office',
     address: '78, LD Block, PITAMPURA,\nNew Delhi-110034',
     phone: '+91 22 2417 7000',
-    email: 'contact@sgihpbps.org'
+    email: 'sgihpbpsindia2025@gmail.com'
   });
 
   const handleInputChange = (e) => {
