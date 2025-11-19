@@ -21,7 +21,7 @@ const MembershipRegistration = () => {
   const [status, setStatus] = useState(null);
   
   // PASTE YOUR NEW GOOGLE SCRIPT URL HERE
-  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzzxqhFFViFMnIy3bSgS3TOUCKj9Pn2L4q1TAw-8wr_wXEwFpq0fn8Kcx4VqQu9WV83/execc";
+  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzzxqhFFViFMnIy3bSgS3TOUCKj9Pn2L4q1TAw-8wr_wXEwFpq0fn8Kcx4VqQu9WV83/exec";
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
