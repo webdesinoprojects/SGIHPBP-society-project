@@ -1,152 +1,82 @@
-import React from 'react';
-import Layout from '../components/Layout';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import eventFlyer from '../assets/1st-Annual-CME-event.pdf';
-import { Link } from 'react-router-dom'
-
-// Animation variants
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, x: -20 },
-  visible: {
-    opacity: 1,
-    x: 0,
-  },
-};
-
+import { Link } from 'react-router-dom';
 
 const AcademicsEvents = () => {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  // REPLACE THIS WITH YOUR NEW DEPLOYED SCRIPT URL
+  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw-_TLEQ-trht5jI2klTi4GJCL-cYJtbVfRfjkNjqlPTJzd43UXqfSemFGpDKGjsNyKbQ/exec";
+
+  useEffect(() => {
+    fetch(GOOGLE_SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "get_events" })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.result === 'success') setEvents(data.data);
+      setLoading(false);
+    })
+    .catch(err => setLoading(false));
+  }, []);
+
   return (
-    // <Layout>
-    // Page fade-in transition
     <motion.main
-      className="container mx-auto px-6 py-12 md:py-20"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.5 }}
+      className="container mx-auto px-6 py-12 md:py-20 min-h-screen"
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
     >
-      {/* Title fade-down */}
-      <motion.div
-        className="text-center max-w-4xl mx-auto"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-      >
+      <div className="text-center max-w-4xl mx-auto mb-16">
         <h1 className="text-4xl md:text-5xl font-display font-bold text-primary dark:text-white mb-4">
           Academics & Events
         </h1>
-        <div className="w-24 h-1 bg-secondary mx-auto mb-6"></div>
-        <p className="text-lg text-text-light dark:text-text-dark leading-relaxed text-justify">
-          Stay informed about our upcoming CMEs, workshops, and conferences. The Society is committed to fostering
-          continuous learning and professional development for all its members. Explore our calendar of events to find
-          opportunities for networking, knowledge sharing, and advancing your expertise in the field of pathology.
+        <div className="w-24 h-1 bg-yellow-500 mx-auto mb-6"></div>
+        <p className="text-lg text-gray-600 dark:text-gray-300">
+          Explore our calendar of CMEs, workshops, and conferences.
         </p>
-      </motion.div>
+      </div>
 
-      {/* Stagger container */}
-      <motion.div
-        className="mt-16"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        <div className="bg-white dark:bg-gray-800/50 rounded-lg shadow-md border border-border-light dark:border-border-dark divide-y divide-border-light dark:divide-border-dark overflow-hidden">
-
-          {/* Stagger item - UPDATED FROM PDF */}
-          <motion.div
-            className="p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between space-y-4 md:space-y-0 md:space-x-6"
-            variants={itemVariants}
-          >
-            <div className="flex-grow">
-              <h2 className="text-2xl font-display font-bold text-primary dark:text-white mb-2">
-                1st Annual CME of SGIHPBPs of India
-              </h2>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-6 space-y-2 sm:space-y-0 text-text-light dark:text-text-dark">
-                <div className="flex items-center">
-                  <span className="material-symbols-outlined text-secondary mr-2 text-xl">calendar_month</span>
-                  <span>February 27-28, 2026 (Workshop & CME)</span>
-                </div>
-                <div className="flex items-center">
-                  <span className="material-symbols-outlined text-secondary mr-2 text-xl">location_on</span>
-                  <span>Auditorium, GB Pant Hospital GIPMER, New Delhi</span>
-                </div>
-              </div>
-              <p className="text-sm text-text-light dark:text-text-dark mt-3">
-                Early bird registration open until December 31, 2025.
-              </p>
-            </div>
-            {/* Button Container */}
-            <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-4 flex-shrink-0">
-
-              {/* 1. NEW Download Flyer Button */}
-              <motion.a
-                className="bg-white border border-primary text-primary dark:bg-gray-700 dark:border-gray-600 dark:text-white font-bold py-3 px-8 rounded-full shadow-lg transition-opacity duration-300 whitespace-nowrap text-center"
-                href={eventFlyer} // Use the imported PDF
-                download="SGIHPBPs_CME_2026_Flyer.pdf" // Sets the download filename
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Download
-              </motion.a>
-
-              {/* 2. Existing Register Button (now centered) */}
-              {/* <motion.a
-                className="bg-secondary text-primary font-bold py-3 px-8 rounded-full shadow-lg transition-opacity duration-300 whitespace-nowrap text-center"
-                href="https://forms.gle/cA5SJdTV4QLrCQPj8"
-                target="_blank"
-                rel="noopener noreferrer"
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Register Now
-              </motion.a> */}
-              <Link
-                to="/event-registration" // Use Link component from react-router-dom
-                className="bg-secondary text-primary font-bold py-3 px-8 rounded-full shadow-lg transition-opacity duration-300 whitespace-nowrap text-center hover:bg-yellow-500"
-              >
-                Register Now
-              </Link>
-            </div>
-          </motion.div>
-
-          {/* Stagger item - Placeholder for next event */}
-          {/* <motion.div 
-              className="p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between space-y-4 md:space-y-0 md:space-x-6 opacity-60"
-              variants={itemVariants}
+      {loading ? (
+        <div className="text-center"><span className="material-symbols-outlined animate-spin text-4xl">progress_activity</span></div>
+      ) : (
+        <div className="grid gap-6">
+          {events.length > 0 ? events.map((event, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6 md:p-8 flex flex-col md:flex-row gap-6"
             >
               <div className="flex-grow">
-                <h2 className="text-2xl font-display font-bold text-gray-500 dark:text-gray-400 mb-2">
-                  Future Event Title
-                </h2>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-6 space-y-2 sm:space-y-0 text-gray-500 dark:text-gray-400">
-                  <div className="flex items-center">
-                    <span className="material-symbols-outlined text-gray-400 mr-2 text-xl">calendar_month</span>
-                    <span>Date To Be Announced</span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="material-symbols-outlined text-gray-400 mr-2 text-xl">location_on</span>
-                    <span>Location To Be Announced</span>
-                  </div>
+                <h2 className="text-2xl font-bold text-primary dark:text-white mb-3">{event.title}</h2>
+                <div className="flex flex-wrap gap-4 text-sm mb-4 text-gray-600 dark:text-gray-300">
+                  <div className="flex items-center"><span className="material-symbols-outlined mr-2">calendar_month</span>{event.date}</div>
+                  <div className="flex items-center"><span className="material-symbols-outlined mr-2">location_on</span>{event.location}</div>
                 </div>
+                <p className="text-gray-700 dark:text-gray-300 mb-4">{event.description}</p>
               </div>
-              <button className="bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400 font-bold py-3 px-8 rounded-full cursor-not-allowed whitespace-nowrap">
-                Coming Soon
-              </button>
-            </motion.div> */}
+              
+              <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0 self-start md:self-center">
+                {event.flyerlink && (
+                  <a href={event.flyerlink} target="_blank" rel="noreferrer" className="px-6 py-2 border-2 border-primary text-primary font-bold rounded-full hover:bg-gray-50 transition text-center">
+                    Download
+                  </a>
+                )}
+                {event.registrationlink && (
+                   <a href={event.registrationlink} target="_blank" rel="noreferrer" className="px-6 py-2 bg-yellow-500 text-primary font-bold rounded-full hover:bg-yellow-400 transition text-center">
+                     Register Now
+                   </a>
+                )}
+              </div>
+            </motion.div>
+          )) : (
+            <div className="text-center text-gray-500">No upcoming events scheduled.</div>
+          )}
         </div>
-      </motion.div>
+      )}
     </motion.main>
-    // </Layout>
   );
 };
 

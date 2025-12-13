@@ -31,7 +31,7 @@ const MembershipRegistration = () => {
   const [memberData, setMemberData] = useState(null);
 
   // Your Google Script URL
-  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzzxqhFFViFMnIy3bSgS3TOUCKj9Pn2L4q1TAw-8wr_wXEwFpq0fn8Kcx4VqQu9WV83/exec";
+  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw-_TLEQ-trht5jI2klTi4GJCL-cYJtbVfRfjkNjqlPTJzd43UXqfSemFGpDKGjsNyKbQ/exec";
 
   // --- HANDLERS: REGISTRATION ---
   const handleChange = (e) => {
