@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom'; // Import Link for the button
-import Logo from '../../assets/Logo_SGIHPBPs.png';
+import Logo from '../../assets/Logo_SGIHPBPS.png';
 
 // 1. Define animation variants for the container and its items
 const containerVariants = {
