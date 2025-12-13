@@ -228,7 +228,7 @@ https://docs.google.com/forms/d/e/1FAIpQLScNrIfWN3eX4XEBRhnCF9rXUHXooTii994i3G8n
                 to="/join-membership"
                 className="inline-block bg-white border-2 border-primary text-primary font-bold py-4 px-10 rounded-lg text-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:bg-gray-50"
               >
-                Download Certificate
+                Download Receipt/Certificate
               </Link>
             </motion.div>
           </div>
