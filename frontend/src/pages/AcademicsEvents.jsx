@@ -5,8 +5,7 @@ import { Link } from 'react-router-dom';
 const AcademicsEvents = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  // REPLACE THIS WITH YOUR NEW DEPLOYED SCRIPT URL
+  // YOUR SCRIPT URL
   const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw-_TLEQ-trht5jI2klTi4GJCL-cYJtbVfRfjkNjqlPTJzd43UXqfSemFGpDKGjsNyKbQ/exec";
 
   useEffect(() => {

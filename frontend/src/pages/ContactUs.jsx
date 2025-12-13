@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import emailjs from '@emailjs/browser';
-import { motion } from 'framer-motion'; // 1. Import motion
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 
 const ContactUs = () => {
   const [formData, setFormData] = useState({
@@ -15,12 +14,14 @@ const ContactUs = () => {
     error: null
   });
 
-  const [contactInfo, setContactInfo] = useState({
+  const [contactInfo] = useState({
     officeName: 'SGIHPBPs Registered Office',
     address: '78, LD Block, PITAMPURA,\nNew Delhi-110034',
     phone: '+919873898110',
     email: 'sgihpbpsindia2025@gmail.com'
   });
+
+  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw-_TLEQ-trht5jI2klTi4GJCL-cYJtbVfRfjkNjqlPTJzd43UXqfSemFGpDKGjsNyKbQ/exec";
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -34,22 +35,17 @@ const ContactUs = () => {
     e.preventDefault();
     setSubmissionState({ loading: true, success: false, error: null });
 
-    const templateParams = {
-      name: formData.name,
-      email: formData.email,
-      subject: formData.subject,
-      message: formData.message,
-      sent_time: new Date().toLocaleString()
-    };
+    try {
+      await fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "submit_contact",
+          ...formData
+        }),
+      });
 
-    emailjs.send(
-      'service_bxrjafe',
-      'template_t9rmf8l',
-      templateParams,
-      'lPdqKL7mHHgqGcUOS'
-    )
-    .then((result) => {
-      console.log('SUCCESS!', result.text);
       setSubmissionState({
         loading: false,
         success: true,
@@ -67,20 +63,17 @@ const ContactUs = () => {
         setSubmissionState(prev => ({ ...prev, success: false }));
       }, 5000);
 
-    }, (error) => {
-      console.error('EmailJS Error:', error.text);
-      console.error('FAILED...', error.text);
+    } catch (error) {
+      console.error("Error:", error);
       setSubmissionState({
         loading: false,
         success: false,
         error: `Sorry, we couldn't send your message. Please try again later or email us directly at ${contactInfo.email}.`
       });
-    });
-
+    }
   };
 
   return (
-    // 2. Page fade-in transition
     <motion.main 
       className="flex-grow"
       initial={{ opacity: 0 }}
@@ -89,7 +82,6 @@ const ContactUs = () => {
       transition={{ duration: 0.5 }}
     >
       <div className="container mx-auto px-6 py-6">
-        {/* 3. Title fade-down */}
         <motion.div 
           className="text-center mb-16"
           initial={{ opacity: 0, y: -20 }}
@@ -105,18 +97,15 @@ const ContactUs = () => {
           </p>
         </motion.div>
 
-        {/* 4. Content fade-up */}
         <motion.div 
           className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start"
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
         >
-          {/* Contact Form */}
           <div className="bg-subtle-light dark:bg-subtle-dark p-8 rounded-xl shadow-lg">
             <h2 className="text-2xl font-bold text-primary dark:text-white mb-6">Send Us a Message</h2>
 
-            {/* Success Message */}
             {submissionState.success && (
               <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                 <div className="flex items-center">
@@ -128,7 +117,6 @@ const ContactUs = () => {
               </div>
             )}
 
-            {/* Error Message */}
             {submissionState.error && (
               <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
                 <div className="flex items-center">
@@ -141,8 +129,6 @@ const ContactUs = () => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* ... form fields ... */}
-              {/* Full Name & Email */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <label className="flex flex-col">
                   <p className="text-sm font-medium pb-2 text-primary dark:text-slate-300">Full Name</p>
@@ -172,7 +158,6 @@ const ContactUs = () => {
                 </label>
               </div>
 
-              {/* Subject */}
               <label className="flex flex-col">
                 <p className="text-sm font-medium pb-2 text-primary dark:text-slate-300">Subject</p>
                 <input
@@ -187,7 +172,6 @@ const ContactUs = () => {
                 />
               </label>
 
-              {/* Message */}
               <label className="flex flex-col">
                 <p className="text-sm font-medium pb-2 text-primary dark:text-slate-300">Message</p>
                 <textarea
@@ -202,7 +186,6 @@ const ContactUs = () => {
                 ></textarea>
               </label>
 
-              {/* 5. Animated submit button */}
               <motion.button
                 className="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-6 bg-accent text-primary text-base font-bold tracking-wide hover:bg-accent/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 type="submit"
@@ -222,33 +205,26 @@ const ContactUs = () => {
             </form>
           </div>
 
-          {/* Contact Information & Map */}
           <div className="space-y-12">
             <div>
               <h2 className="text-2xl font-bold text-primary dark:text-white mb-4">Our Address</h2>
               <div className="space-y-4 text-slate-600 dark:text-slate-400 text-base leading-relaxed">
-
                 <div className="flex items-start gap-3">
                   <span className="material-symbols-outlined text-accent text-xl mt-1">location_on</span>
                   <div className="flex flex-col">
                     <p className="font-semibold text-primary dark:text-white">{contactInfo.officeName}</p>
-                    <p style={{ whiteSpace: 'pre-line' }}>
-                      {contactInfo.address}
-                    </p>
+                    <p style={{ whiteSpace: 'pre-line' }}>{contactInfo.address}</p>
                   </div>
                 </div>
-
                 <div className="flex items-center gap-3">
                   <span className="material-symbols-outlined text-accent text-xl">phone</span>
                   <span>{contactInfo.phone}</span>
                 </div>
-
                 <div className="flex items-center gap-3">
                   <span className="material-symbols-outlined text-accent text-xl">mail</span>
                   <span>{contactInfo.email}</span>
                 </div>
               </div>
-
             </div>
 
             <div>
@@ -269,7 +245,6 @@ const ContactUs = () => {
         </motion.div>
       </div>
     </motion.main>
-    // </Layout>
   );
 };
 
