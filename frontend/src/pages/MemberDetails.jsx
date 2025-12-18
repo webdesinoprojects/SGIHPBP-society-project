@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+// Import MUI components
+import { Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 
 const categories = ['All', 'Life', 'Founder', 'Ad Hoc', 'Associate'];
 const ITEMS_PER_PAGE = 20;
@@ -18,14 +20,12 @@ const MembersDetails = () => {
   const [inputCategory, setInputCategory] = useState(initialCat);
 
   // Active Filter State (What is actually being used to filter results)
-  // These only update when "Search" is clicked.
   const [activeSearch, setActiveSearch] = useState(initialQuery);
   const [activeCategory, setActiveCategory] = useState(initialCat);
 
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Only show results if we have an active search/filter from URL or user action
   const [hasSearched, setHasSearched] = useState(!!initialQuery || initialCat !== 'All');
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -60,15 +60,12 @@ const MembersDetails = () => {
   }, []);
 
   // === 3. HANDLERS ===
-  
-  // Trigger Search (Updates Active State & URL)
   const handleSearch = () => {
     setActiveSearch(inputSearch);
     setActiveCategory(inputCategory);
     setHasSearched(true);
     setCurrentPage(1);
 
-    // Update URL parameters manually only on click
     const params = {};
     if (inputSearch) params.m_search = inputSearch;
     if (inputCategory !== 'All') params.cat = inputCategory;
@@ -90,12 +87,9 @@ const MembersDetails = () => {
     document.getElementById('results-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  // Helper to extract City/State from full address
   const getCityState = (address) => {
     if (!address) return "";
-    // Split by comma, trim whitespace
     const parts = address.split(',').map(p => p.trim()).filter(Boolean);
-    // Return last 2 parts if available (e.g., "Delhi, India"), else return full string if short
     if (parts.length > 1) {
       return parts.slice(-2).join(', ');
     }
@@ -104,18 +98,15 @@ const MembersDetails = () => {
 
   // === 4. FILTERING LOGIC ===
   const filteredMembers = useMemo(() => {
-    // Rely on ACTIVE state, not INPUT state
     if (!hasSearched && !activeSearch && activeCategory === 'All') return [];
 
     const terms = activeSearch.toLowerCase().split(/\s+/).filter(Boolean);
 
     return members.filter(member => {
-      // 1. Category Filter
       if (activeCategory !== 'All') {
          if (!(member.category || "").toLowerCase().includes(activeCategory.toLowerCase())) return false;
       }
 
-      // 2. Keyword Filter
       if (terms.length === 0) return true;
       
       const rowString = `
@@ -171,7 +162,7 @@ const MembersDetails = () => {
                    value={inputSearch} 
                    onChange={(e) => setInputSearch(e.target.value)}
                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                   className="w-full h-12 pl-12 pr-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all font-medium text-gray-700 dark:text-white"
+                   className="w-full h-[56px] pl-12 pr-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all font-medium text-gray-700 dark:text-white"
                  />
                  {inputSearch && (
                    <button onClick={() => setInputSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500">
@@ -181,26 +172,32 @@ const MembersDetails = () => {
                </div>
              </div>
 
-             {/* Category Select */}
+             {/* MUI Select Dropdown */}
              <div className="md:col-span-4 lg:col-span-3">
-               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">Membership Category</label>
-               <div className="relative">
-                 <select 
+               <FormControl fullWidth variant="outlined" className="bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                 <InputLabel id="category-select-label" className="dark:text-gray-400">Membership Category</InputLabel>
+                 <Select
+                   labelId="category-select-label"
+                   id="category-select"
                    value={inputCategory}
                    onChange={(e) => setInputCategory(e.target.value)}
-                   className="w-full h-12 pl-4 pr-10 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary outline-none appearance-none cursor-pointer font-medium text-gray-700 dark:text-white"
+                   label="Membership Category"
+                   className="dark:text-white h-[56px]"
                  >
-                   {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                 </select>
-                 <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none">expand_more</span>
-               </div>
+                   {categories.map((cat) => (
+                     <MenuItem key={cat} value={cat}>
+                       {cat}
+                     </MenuItem>
+                   ))}
+                 </Select>
+               </FormControl>
              </div>
 
              {/* Search Button */}
              <div className="md:col-span-2 lg:col-span-2">
                <button 
                  onClick={handleSearch}
-                 className="w-full h-12 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-blue-900 active:scale-95 transition-all flex items-center justify-center gap-2"
+                 className="w-full h-[56px] bg-primary text-white font-bold rounded-lg shadow-md hover:bg-blue-900 active:scale-95 transition-all flex items-center justify-center gap-2"
                >
                  Search
                </button>
@@ -220,7 +217,7 @@ const MembersDetails = () => {
            )}
         </div>
 
-        {/* === RESULTS TABLE === */}
+        {/* === RESULTS SECTION === */}
         <AnimatePresence mode='wait'>
           {!hasSearched ? (
             // EMPTY STATE
@@ -238,7 +235,7 @@ const MembersDetails = () => {
               </p>
             </motion.div>
           ) : (
-            // DATA TABLE
+            // DATA CONTAINER
             <motion.div 
               key="results"
               id="results-table"
@@ -254,7 +251,95 @@ const MembersDetails = () => {
                 </span>
               </div>
 
-              <div className="overflow-x-auto">
+              {/* MOBILE CARD VIEW */}
+              <div className="md:hidden">
+                {loading ? (
+                  <div className="p-4 space-y-4">
+                    {[1,2,3].map(i => (
+                      <div key={i} className="animate-pulse bg-gray-50 dark:bg-gray-700 p-4 rounded-lg h-40"></div>
+                    ))}
+                  </div>
+                ) : paginatedMembers.length > 0 ? (
+                  <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                    {paginatedMembers.map((member, i) => (
+                      <div key={i} className="p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        
+                        {/* 1. Header: Name, ID, Category */}
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h4 className="font-bold text-gray-900 dark:text-white text-lg leading-tight">{member.name}</h4>
+                            <span className="text-xs font-mono text-gray-500 bg-gray-100 dark:bg-gray-600 px-1.5 py-0.5 rounded mt-1 inline-block">
+                              {member.memberId}
+                            </span>
+                          </div>
+                          <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${
+                            (member.category || "").includes('Life')
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800'
+                            : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800'
+                          }`}>
+                             {member.category}
+                          </span>
+                        </div>
+                        
+                        {/* 2. Details in a Single Grid for Perfect Alignment */}
+                        <div className="grid grid-cols-2 gap-x-1 gap-y-1 mt-4 text-sm text-gray-600 dark:text-gray-300">
+                           
+                           {/* Row 1, Col 1 */}
+                           <div className="flex items-start gap-2 min-w-0">
+                               <span className="material-symbols-outlined text-[18px] text-gray-400 mt-0.5 flex-shrink-0">school</span>
+                               <span className="font-medium break-words">{member.qualification || 'N/A'}</span>
+                           </div>
+
+                           {/* Row 1, Col 2 */}
+                           <div className="flex items-start gap-2 min-w-0">
+                                <span className="material-symbols-outlined text-[18px] text-gray-400 mt-0.5 flex-shrink-0">mail</span>
+                                {member.email ? (
+                                  <a href={`mailto:${member.email}`} className="text-primary hover:underline break-all leading-tight">
+                                    {member.email}
+                                  </a>
+                                ) : <span>-</span>}
+                           </div>
+
+                           {/* Row 2, Col 1 */}
+                           <div className="flex items-start gap-2 min-w-0">
+                               <span className="material-symbols-outlined text-[18px] text-gray-400 mt-0.5 flex-shrink-0">location_on</span>
+                               <span className="leading-tight break-words">{getCityState(member.address) || 'Unknown'}</span>
+                           </div>
+
+                           {/* Row 2, Col 2 */}
+                           <div className="flex items-start gap-2 min-w-0">
+                                <span className="material-symbols-outlined text-[18px] text-gray-400 mt-0.5 flex-shrink-0">call</span>
+                                {member.phone ? (
+                                  <a href={`tel:${member.phone}`} className="text-gray-700 dark:text-gray-300 hover:text-primary transition-colors">
+                                    {member.phone}
+                                  </a>
+                                ) : <span>-</span>}
+                           </div>
+                        </div>
+
+                        {/* 3. Footer: Action Buttons (Kept as requested) */}
+                        <div className="flex gap-3 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+                          {member.email && (
+                            <a href={`mailto:${member.email}`} className="flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold text-primary bg-primary/5 hover:bg-primary/10 rounded transition-colors">
+                              <span className="material-symbols-outlined text-sm">mail</span> Email
+                            </a>
+                          )}
+                          {member.phone && (
+                            <a href={`tel:${member.phone}`} className="flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 rounded transition-colors">
+                              <span className="material-symbols-outlined text-sm">call</span> Call
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 text-center text-gray-500">No members found.</div>
+                )}
+              </div>
+
+              {/* DESKTOP TABLE VIEW (Hidden on Mobile) */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm text-left whitespace-nowrap">
                   <thead className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase text-xs font-bold tracking-wider">
                     <tr>
@@ -294,7 +379,6 @@ const MembersDetails = () => {
                             {member.qualification}
                           </td>
                           <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
-                            {/* Truncated Address */}
                             <span className="flex items-center gap-1">
                                <span className="material-symbols-outlined text-[16px] text-gray-400">location_on</span>
                                {getCityState(member.address)}
