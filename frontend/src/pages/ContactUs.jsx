@@ -6,8 +6,10 @@ const ContactUs = () => {
     name: '',
     email: '',
     subject: '',
-    message: ''
+    message: '',
+    website_url: '' // 🍯 HONEYPOT: Hidden field for bots
   });
+  
   const [submissionState, setSubmissionState] = useState({
     loading: false,
     success: false,
@@ -38,8 +40,7 @@ const ContactUs = () => {
     try {
       await fetch(GOOGLE_SCRIPT_URL, {
         method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
+        // 🚨 Removed 'mode: no-cors' to allow error handling
         body: JSON.stringify({
           action: "submit_contact",
           ...formData
@@ -56,7 +57,8 @@ const ContactUs = () => {
         name: '',
         email: '',
         subject: '',
-        message: ''
+        message: '',
+        website_url: ''
       });
 
       setTimeout(() => {
@@ -129,6 +131,17 @@ const ContactUs = () => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* 🍯 HONEYPOT FIELD (Hidden from users) */}
+              <input
+                type="text"
+                name="website_url"
+                value={formData.website_url}
+                onChange={handleInputChange}
+                style={{ display: 'none' }}
+                tabIndex="-1"
+                autoComplete="off"
+              />
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <label className="flex flex-col">
                   <p className="text-sm font-medium pb-2 text-primary dark:text-slate-300">Full Name</p>
