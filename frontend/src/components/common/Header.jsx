@@ -150,7 +150,7 @@ const Header = ({ currentPage }) => {
                       variants={navLinkVariants}
                       whileHover="hover"
                       // This logic correctly highlights the parent tab if a child page is active
-                      className={`nav-link font-semibold flex items-center transition-colors ${
+                      className={`nav-link font-semibold text-lg flex items-center transition-colors ${
                         currentPage === link.page || link.dropdown.some(item => item.to.slice(1) === currentPage) 
                           ? 'text-gold-DEFAULT dark:text-gold-light' 
                           : 'text-gray-800 dark:text-white'
@@ -169,7 +169,7 @@ const Header = ({ currentPage }) => {
                           key={item.to}
                           to={item.to}
                           // 3. This logic highlights the active dropdown item
-                          className={`block px-4 py-2 text-sm ${
+                          className={`block px-4 py-2 text-base ${
                             currentPage === item.to.slice(1)
                               ? 'text-gold-DEFAULT dark:text-gold-light font-bold'
                               : 'text-gray-800 dark:text-white'
@@ -184,7 +184,7 @@ const Header = ({ currentPage }) => {
                   <motion.div key={link.to} variants={navLinkVariants} whileHover="hover">
                     <Link
                       to={link.to}
-                      className={`nav-link font-semibold transition-colors ${currentPage === link.page ? 'text-gold-DEFAULT dark:text-gold-light' : 'text-gray-800 dark:text-white'
+                      className={`nav-link font-semibold text-lg transition-colors ${currentPage === link.page ? 'text-gold-DEFAULT dark:text-gold-light' : 'text-gray-800 dark:text-white'
                         }`}
                     >
                       {link.label}
@@ -237,7 +237,7 @@ const Header = ({ currentPage }) => {
                 >
                   <Link
                     to={link.to}
-                    className={`flex items-center w-full text-left py-3 pl-4 font-semibold transition-colors text-lg ${currentPage === link.page
+                    className={`flex items-center w-full text-left py-3 pl-4 font-semibold transition-colors text-xl ${currentPage === link.page
                         ? 'text-[#D4AF37] dark:text-gold-light' // ACTIVE
                         : 'text-gray-800 dark:text-white'
                       } hover:text-[#D4AF37] dark:hover:text-gold-light`} // HOVER
