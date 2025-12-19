@@ -137,7 +137,7 @@ const ContactUs = () => {
                     value={formData.name}
                     onChange={handleInputChange}
                     className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-text-light dark:text-text-dark focus:outline-0 focus:ring-2 focus:ring-accent/50 border border-slate-300 dark:border-slate-600 bg-background-light dark:bg-background-dark h-26 placeholder:text-slate-400 dark:placeholder-slate-500 px-4 text-base font-normal"
-                    placeholder="John Doe"
+                    placeholder="Your name"
                     type="text"
                     required
                     disabled={submissionState.loading}
@@ -150,7 +150,7 @@ const ContactUs = () => {
                     value={formData.email}
                     onChange={handleInputChange}
                     className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-text-light dark:text-text-dark focus:outline-0 focus:ring-2 focus:ring-accent/50 border border-slate-300 dark:border-slate-600 bg-background-light dark:bg-background-dark h-12 placeholder:text-slate-400 dark:placeholder-slate-500 px-4 text-base font-normal"
-                    placeholder="you@example.com"
+                    placeholder="Your email address"
                     type="email"
                     required
                     disabled={submissionState.loading}
