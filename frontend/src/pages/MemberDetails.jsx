@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react'; 
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 // Import MUI components
@@ -23,40 +23,65 @@ const MembersDetails = () => {
   const [activeSearch, setActiveSearch] = useState(initialQuery);
   const [activeCategory, setActiveCategory] = useState(initialCat);
 
+  // Data State
   const [members, setMembers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); 
   
-  const [hasSearched, setHasSearched] = useState(!!initialQuery || initialCat !== 'All');
+  // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+
+  // Track if a search has been performed
+  const [hasSearched, setHasSearched] = useState(!!initialQuery || initialCat !== 'All');
 
   const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw-_TLEQ-trht5jI2klTi4GJCL-cYJtbVfRfjkNjqlPTJzd43UXqfSemFGpDKGjsNyKbQ/exec";
 
-  // === 2. DATA FETCHING ===
-  useEffect(() => {
-    const fetchMembers = async () => {
-      const cachedData = sessionStorage.getItem("members_data");
-      if (cachedData) {
-        setMembers(JSON.parse(cachedData));
-        setLoading(false);
-      }
-
-      try {
-        const response = await fetch(`${GOOGLE_SCRIPT_URL}?t=${new Date().getTime()}`, {
-          method: "POST",
-          body: JSON.stringify({ action: "get_members" })
-        });
-        const data = await response.json();
-        if (data.result === 'success') {
-          setMembers(data.members);
-          sessionStorage.setItem("members_data", JSON.stringify(data.members));
-        }
-      } catch (error) {
-        console.error("Error fetching members:", error);
-      } finally {
-        setLoading(false);
-      }
+  // === 2. DATA FETCHING (Server-Side) ===
+  const fetchMembers = async (page, search, category) => {
+    setLoading(true);
+    
+    // Prepare payload for server-side pagination
+    const payload = {
+        action: "get_members",
+        page: page,
+        limit: ITEMS_PER_PAGE,
+        search: search,
+        category: category === 'All' ? '' : category 
     };
-    fetchMembers();
+
+    try {
+      const response = await fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      
+      if (data.result === 'success') {
+        setMembers(data.members || []);
+        
+        if (data.pagination) {
+            setTotalPages(data.pagination.totalPages);
+            setTotalItems(data.pagination.totalItems);
+            setCurrentPage(data.pagination.currentPage);
+        } else {
+            setTotalPages(1);
+            setTotalItems(data.members.length);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching members:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial Load
+  useEffect(() => {
+    if (hasSearched) {
+        fetchMembers(1, initialQuery, initialCat);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // === 3. HANDLERS ===
@@ -64,12 +89,14 @@ const MembersDetails = () => {
     setActiveSearch(inputSearch);
     setActiveCategory(inputCategory);
     setHasSearched(true);
-    setCurrentPage(1);
+    setCurrentPage(1); 
 
     const params = {};
     if (inputSearch) params.m_search = inputSearch;
     if (inputCategory !== 'All') params.cat = inputCategory;
     setSearchParams(params);
+
+    fetchMembers(1, inputSearch, inputCategory);
   };
 
   const handleClear = () => {
@@ -80,14 +107,18 @@ const MembersDetails = () => {
     setHasSearched(false);
     setSearchParams({});
     setCurrentPage(1);
+    setMembers([]); 
   };
 
   const handlePageChange = (newPage) => {
-    setCurrentPage(newPage);
-    document.getElementById('results-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (newPage >= 1 && newPage <= totalPages) {
+        setCurrentPage(newPage);
+        fetchMembers(newPage, activeSearch, activeCategory);
+        document.getElementById('results-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
-  const getCityState = (address) => {
+   const getCityState = (address) => {
     if (!address) return "";
     const parts = address.split(',').map(p => p.trim()).filter(Boolean);
     if (parts.length > 1) {
@@ -96,38 +127,6 @@ const MembersDetails = () => {
     return address;
   };
 
-  // === 4. FILTERING LOGIC ===
-  const filteredMembers = useMemo(() => {
-    if (!hasSearched && !activeSearch && activeCategory === 'All') return [];
-
-    const terms = activeSearch.toLowerCase().split(/\s+/).filter(Boolean);
-
-    return members.filter(member => {
-      if (activeCategory !== 'All') {
-         if (!(member.category || "").toLowerCase().includes(activeCategory.toLowerCase())) return false;
-      }
-
-      if (terms.length === 0) return true;
-      
-      const rowString = `
-        ${member.name} 
-        ${member.memberId} 
-        ${member.qualification} 
-        ${member.address} 
-        ${member.email} 
-        ${member.phone}
-      `.toLowerCase();
-
-      return terms.every(term => rowString.includes(term));
-    });
-  }, [activeSearch, activeCategory, members, hasSearched]);
-
-  // === 5. PAGINATION ===
-  const totalPages = Math.ceil(filteredMembers.length / ITEMS_PER_PAGE);
-  const paginatedMembers = filteredMembers.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
 
   return (
     <motion.main 
@@ -247,7 +246,7 @@ const MembersDetails = () => {
                   <span className="material-symbols-outlined text-primary">list_alt</span> Search Results
                 </h3>
                 <span className="text-xs font-bold bg-primary/10 text-primary px-3 py-1 rounded-full">
-                  {loading ? 'Processing...' : `${filteredMembers.length} Members`}
+                  {loading ? 'Processing...' : `${totalItems} Members`}
                 </span>
               </div>
 
@@ -259,9 +258,9 @@ const MembersDetails = () => {
                       <div key={i} className="animate-pulse bg-gray-50 dark:bg-gray-700 p-4 rounded-lg h-40"></div>
                     ))}
                   </div>
-                ) : paginatedMembers.length > 0 ? (
+                ) : members.length > 0 ? (
                   <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                    {paginatedMembers.map((member, i) => (
+                    {members.map((member, i) => (
                       <div key={i} className="p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                         
                         {/* 1. Header: Name, ID, Category */}
@@ -281,7 +280,7 @@ const MembersDetails = () => {
                           </span>
                         </div>
                         
-                        {/* 2. Details in a Single Grid for Perfect Alignment */}
+                        {/* 2. Details in a Single Grid */}
                         <div className="grid grid-cols-2 gap-x-1 gap-y-1 mt-4 text-sm text-gray-600 dark:text-gray-300">
                            
                            {/* Row 1, Col 1 */}
@@ -301,10 +300,10 @@ const MembersDetails = () => {
                            </div>
 
                            {/* Row 2, Col 1 */}
-                           <div className="flex items-start gap-2 min-w-0">
+                           {/* <div className="flex items-start gap-2 min-w-0">
                                <span className="material-symbols-outlined text-[18px] text-gray-400 mt-0.5 flex-shrink-0">location_on</span>
                                <span className="leading-tight break-words">{getCityState(member.address) || 'Unknown'}</span>
-                           </div>
+                           </div> */}
 
                            {/* Row 2, Col 2 */}
                            <div className="flex items-start gap-2 min-w-0">
@@ -317,7 +316,7 @@ const MembersDetails = () => {
                            </div>
                         </div>
 
-                        {/* 3. Footer: Action Buttons (Kept as requested) */}
+                        {/* 3. Footer: Action Buttons */}
                         <div className="flex gap-3 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
                           {member.email && (
                             <a href={`mailto:${member.email}`} className="flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold text-primary bg-primary/5 hover:bg-primary/10 rounded transition-colors">
@@ -338,7 +337,7 @@ const MembersDetails = () => {
                 )}
               </div>
 
-              {/* DESKTOP TABLE VIEW (Hidden on Mobile) */}
+              {/* DESKTOP TABLE VIEW */}
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm text-left whitespace-nowrap">
                   <thead className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase text-xs font-bold tracking-wider">
@@ -346,7 +345,7 @@ const MembersDetails = () => {
                       <th className="px-6 py-4 border-b dark:border-gray-600">ID</th>
                       <th className="px-6 py-4 border-b dark:border-gray-600">Name</th>
                       <th className="px-6 py-4 border-b dark:border-gray-600">Qualification</th>
-                      <th className="px-6 py-4 border-b dark:border-gray-600">Location</th>
+                      {/* <th className="px-6 py-4 border-b dark:border-gray-600">Location</th> */}
                       <th className="px-6 py-4 border-b dark:border-gray-600">Email</th>
                       <th className="px-6 py-4 border-b dark:border-gray-600">Phone</th>
                       <th className="px-6 py-4 border-b dark:border-gray-600 text-center">Category</th>
@@ -360,30 +359,30 @@ const MembersDetails = () => {
                           <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-12"></div></td>
                           <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32"></div></td>
                           <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div></td>
-                          <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div></td>
+                          {/* <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div></td> */}
                           <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32"></div></td>
                           <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div></td>
                           <td className="px-6 py-4"><div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-16 mx-auto"></div></td>
                         </tr>
                       ))
-                    ) : paginatedMembers.length > 0 ? (
-                      paginatedMembers.map((member, i) => (
+                    ) : members.length > 0 ? (
+                      members.map((member, i) => (
                         <tr key={i} className="hover:bg-blue-50/50 dark:hover:bg-gray-700/50 transition-colors">
                           <td className="px-6 py-4 font-mono text-xs font-bold text-gray-500">
-                            {member.memberId}
+                            {member.memberId || <span className="text-gray-400">N/A</span>}
                           </td>
                           <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">
-                            {member.name}
+                            {member.name || <span className="text-gray-400">N/A</span>}
                           </td>
                           <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
-                            {member.qualification}
+                            {member.qualification || <span className="text-gray-400">N/A</span>}
                           </td>
-                          <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
-                            <span className="flex items-center gap-1">
+                          {/* <td className="px-6 py-4 text-gray-600 dark:text-gray-300"> */}
+                            {/* <span className="flex items-center gap-1">
                                <span className="material-symbols-outlined text-[16px] text-gray-400">location_on</span>
-                               {getCityState(member.address)}
-                            </span>
-                          </td>
+                               {getCityState(member.address) || <span className="text-gray-400">Unknown</span>}
+                            </span> */}
+                          {/* </td> */}
                           <td className="px-6 py-4">
                             {member.email ? (
                                <a href={`mailto:${member.email}`} className="text-primary hover:underline font-medium">
@@ -417,10 +416,10 @@ const MembersDetails = () => {
               </div>
 
               {/* PAGINATION */}
-              {!loading && filteredMembers.length > 0 && (
+              {!loading && members.length > 0 && (
                 <div className="bg-gray-50 dark:bg-gray-700/30 px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="text-xs text-gray-500 font-medium">
-                    Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredMembers.length)} of {filteredMembers.length}
+                    Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} of {totalItems}
                   </div>
                   
                   <div className="flex items-center gap-1">
