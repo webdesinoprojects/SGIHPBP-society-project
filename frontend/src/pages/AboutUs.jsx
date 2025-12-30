@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import SEO from '../components/SEO';
 
 const AboutUs = () => {
   return (
@@ -8,6 +9,11 @@ const AboutUs = () => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
+      <SEO 
+        title="About Us" 
+        description="Learn about the mission, goals, and guiding principles of the Society of Gastrointestinal & Hepato-Pancreatobiliary Pathologists of India."
+        keywords="about SGIHPBP, pathology mission, medical society goals"
+      />
       {/* Page Header */}
       <div className="text-center mb-16">
         <motion.h1 

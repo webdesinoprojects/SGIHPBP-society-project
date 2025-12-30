@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
+import SEO from '../components/SEO';
 import PaymentQR from '../assets/payment-qr.png';
 
 const EventRegistration = () => {
@@ -182,6 +183,11 @@ const EventRegistration = () => {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="container mx-auto px-4 py-12">
+      <SEO 
+        title="Event Registration" 
+        description="Register for upcoming SGIHPBP events, workshops, and conferences."
+        keywords="event registration, medical conference registration, pathology workshop"
+      />
       <div className="max-w-6xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-2xl overflow-hidden">
 
         <div className="bg-secondary text-primary p-8 text-center border-b-4 border-gold-DEFAULT">

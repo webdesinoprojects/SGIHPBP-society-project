@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import SEO from '../components/SEO';
 import CountdownTimer from '../components/common/CountdownTimer';
 
 const AcademicsEvents = () => {
@@ -78,6 +79,11 @@ const AcademicsEvents = () => {
       className="container mx-auto px-6 py-12 md:py-20 min-h-screen"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
     >
+      <SEO 
+        title="Academics & Events" 
+        description="Stay updated with the latest academic events, conferences, and workshops organized by SGIHPBP."
+        keywords="pathology events, medical conferences, SGIHPBP academics, workshops"
+      />
       <div className="text-center max-w-4xl mx-auto mb-16">
         <h1 className="text-4xl md:text-5xl font-display font-bold text-primary dark:text-white mb-4">
           Academics & Events

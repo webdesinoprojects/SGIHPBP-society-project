@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import SEO from '../components/SEO';
 import DrPrasenjitDas from '../assets/Dr-Prasenjit-Das,-Secrertary-General.jpg';
 
 const SecretaryMessage = () => {
@@ -8,6 +9,11 @@ const SecretaryMessage = () => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
+      <SEO 
+        title="Secretary's Message" 
+        description="Read the message from the Secretary General of SGIHPBP, Prof. Prasenjit Das."
+        keywords="secretary message, SGIHPBP secretary, pathology society leadership"
+      />
       <div className="container mx-auto px-4 lg:px-6 py-16">
         <div className="max-w-4xl mx-auto">
           {/* Profile Section */}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import SEO from '../components/SEO';
 
 const Publications = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -66,6 +67,11 @@ const Publications = () => {
       className="flex-grow min-h-screen"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
     >
+      <SEO 
+        title="Publications" 
+        description="Access society-endorsed guidelines, educational articles, and research findings in GI and HPB pathology."
+        keywords="pathology publications, medical guidelines, research papers, SGIHPBP journal"
+      />
       <div className="container mx-auto max-w-5xl px-4 py-12 sm:py-16">
         <div className="mb-10 text-center">
           <h1 className="text-4xl font-black tracking-tighter text-primary dark:text-white sm:text-5xl">

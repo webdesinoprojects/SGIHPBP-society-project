@@ -1,5 +1,6 @@
 import React from 'react'
 import ComingSoon from '../components/common/ComingSoon'
+import SEO from '../components/SEO'
 
 const JournalSearch = () => {
   const searchIcon = (
@@ -21,12 +22,19 @@ const JournalSearch = () => {
   );
 
   return (
-    <ComingSoon 
-      title="Journal Search" 
-      description="We are building a powerful search engine for our extensive collection of medical journals. Soon you'll be able to find research papers, articles, and case studies with ease."
-      icon={searchIcon}
-      status="Coming Soon"
-    />
+    <>
+      <SEO 
+        title="Journal Search" 
+        description="Search our extensive collection of medical journals and research papers."
+        keywords="journal search, medical research, pathology papers"
+      />
+      <ComingSoon 
+        title="Journal Search" 
+        description="We are building a powerful search engine for our extensive collection of medical journals. Soon you'll be able to find research papers, articles, and case studies with ease."
+        icon={searchIcon}
+        status="Coming Soon"
+      />
+    </>
   )
 }
 

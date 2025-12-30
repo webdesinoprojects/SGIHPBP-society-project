@@ -1,5 +1,6 @@
 import React from 'react';
 import Layout from '../components/Layout';
+import SEO from '../components/SEO';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
@@ -43,6 +44,11 @@ const Membership = () => {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
     >
+      <SEO 
+        title="Membership" 
+        description="Join SGIHPBP to access exclusive resources, network with experts, and advance your career in GI and HPB pathology."
+        keywords="membership, pathology society, GI pathology, HPB pathology, medical community"
+      />
       {/* Hero Section */}
       <section
         className="bg-cover bg-center py-20"

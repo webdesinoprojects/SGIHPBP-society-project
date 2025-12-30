@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import SEO from '../components/SEO';
 import DrAnjaliAmarapurkar from '../assets/Dr-Anjali-Amarapurkar,-Vice-President.jpg';
 import DrArchanaRadstogi from '../assets/Dr-Archana-Radstogi,-Governing-Body-Member.jpg';
 import DrArvindAhuja from '../assets/Dr-Arvind-Ahuja,-Treasurer.jpg';
@@ -119,6 +120,11 @@ const GoverningBody = () => {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
     >
+      <SEO 
+        title="Governing Body" 
+        description="Meet the distinguished office bearers and governing body members of SGIHPBP."
+        keywords="SGIHPBP governing body, pathology leadership, medical society board"
+      />
       <main className="flex-1">
         <div className="container mx-auto px-4 py-12 md:py-20">
           <div className="mx-auto max-w-6xl">

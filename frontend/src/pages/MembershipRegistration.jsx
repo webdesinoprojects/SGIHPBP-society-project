@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import SEO from '../components/SEO';
 import PaymentQR from '../assets/payment-qr.png';
 
 const MembershipRegistration = () => {
@@ -231,6 +232,11 @@ const MembershipRegistration = () => {
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} 
       className="container mx-auto px-4 py-12"
     >
+      <SEO 
+        title="Join Membership" 
+        description="Register for SGIHPBP membership. Apply for Life, Associate, or Ad Hoc membership."
+        keywords="join SGIHPBP, membership registration, pathology society application"
+      />
       <div className="max-w-6xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-2xl overflow-hidden">
         
         {/* Header with Tabs */}

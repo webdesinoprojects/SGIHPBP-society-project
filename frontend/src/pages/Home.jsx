@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import SEO from '../components/SEO'
 import HeroSection from '../components/sections/HeroSection'
 import MissionSection from '../components/sections/MissionSection'
 import PresidentSection from '../components/sections/PresidentSection'
@@ -61,6 +62,11 @@ const Home = () => {
 
   return (
     <main>
+      <SEO 
+        title="Home" 
+        description="Welcome to the Society of Gastrointestinal & Hepato-Pancreatobiliary Pathologists of India (SGIHPBP). Advancing pathology through education and research."
+        keywords="SGIHPBP, pathology society India, GI pathology, HPB pathology, medical education"
+      />
       <HeroSection />
       <EventTicker />
       {/* DYNAMIC COUNTDOWN SECTION */}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'; 
+import SEO from '../components/SEO';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 // Import MUI components
@@ -134,6 +135,11 @@ const MembersDetails = () => {
       animate={{ opacity: 1 }} 
       className="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans"
     >
+      <SEO 
+        title="Member Directory" 
+        description="Search and view the directory of SGIHPBP members."
+        keywords="SGIHPBP members, pathology directory, medical professionals list"
+      />
       {/* === HERO === */}
       <section className="bg-primary text-white pt-16 pb-12 relative overflow-hidden">
         <div className="container mx-auto px-4 text-center relative z-10">

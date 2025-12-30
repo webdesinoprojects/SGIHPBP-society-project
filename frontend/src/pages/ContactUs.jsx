@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import SEO from '../components/SEO';
 
 const ContactUs = () => {
   const [formData, setFormData] = useState({
@@ -83,6 +84,11 @@ const ContactUs = () => {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
     >
+      <SEO 
+        title="Contact Us" 
+        description="Get in touch with SGIHPBP. Find our registered office address, email, and phone number."
+        keywords="contact SGIHPBP, pathology society contact, medical society India address"
+      />
       <div className="container mx-auto px-6 py-6">
         <motion.div 
           className="text-center mb-16"

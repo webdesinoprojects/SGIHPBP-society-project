@@ -1,5 +1,6 @@
 import React from 'react'
 import ComingSoon from '../components/common/ComingSoon'
+import SEO from '../components/SEO'
 
 const CaseOfTheMonth = () => {
   const caseIcon = (
@@ -23,12 +24,19 @@ const CaseOfTheMonth = () => {
   );
 
   return (
-    <ComingSoon 
-      title="Case of the Month" 
-      description="We are curating a selection of exceptional clinical cases for educational purposes. Each month, we will feature a new case with detailed analysis and discussion."
-      icon={caseIcon}
-      status="Coming Soon"
-    />
+    <>
+      <SEO 
+        title="Case of the Month" 
+        description="Explore our monthly featured clinical cases with detailed analysis and discussion."
+        keywords="pathology cases, clinical case study, medical education, SGIHPBP cases"
+      />
+      <ComingSoon 
+        title="Case of the Month" 
+        description="We are curating a selection of exceptional clinical cases for educational purposes. Each month, we will feature a new case with detailed analysis and discussion."
+        icon={caseIcon}
+        status="Coming Soon"
+      />
+    </>
   )
 }
 
