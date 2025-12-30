@@ -142,7 +142,7 @@ const Membership = () => {
                     Ad Hoc Membership
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-6 flex-grow text-justify">
-                    A temporary membership for a maximum of 3 years, ideal for post graduate trainees, fellows and research fellows. A life membership can be applied after 3 years on additional payment of 7500 with prof of previous Ad hoc membership
+                    A temporary membership for a maximum of 3 years, ideal for post graduate trainees, fellows and research fellows. A life membership can be applied after 3 years on additional payment of 7500 with proof of previous Ad hoc membership.
                   </p>
                   <div className="mt-auto">
                     <p className="text-3xl font-bold text-text-light dark:text-heading-dark">₹2,500</p>
