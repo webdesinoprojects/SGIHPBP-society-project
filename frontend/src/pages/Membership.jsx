@@ -74,11 +74,11 @@ const Membership = () => {
       {/* Content Section */}
       <section className="py-16 md:py-24">
         <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-6xl mx-auto"> 
 
             {/* 5. Section scroll-in animation */}
             <motion.div
-              className="mb-16"
+              className="mb-16 max-w-4xl mx-auto"
               variants={sectionVariant}
               initial="hidden"
               whileInView="visible"
@@ -105,16 +105,15 @@ const Membership = () => {
               <h2 className="text-3xl font-display font-bold text-text-light dark:text-heading-dark text-center mb-10">
                 Membership Types & Fees
               </h2>
-              {/* 6. Stagger container for the two cards */}
               <motion.div
-                className="grid md:grid-cols-2 gap-8"
+                className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
                 variants={cardContainerVariants}
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, amount: 0.3 }}
               >
 
-                {/* Stagger item */}
+                {/* Card 1: Life Membership */}
                 <motion.div
                   className="bg-card-light dark:bg-card-dark p-8 rounded-lg shadow-lg border border-border-light dark:border-border-dark flex flex-col"
                   variants={cardVariants}
@@ -132,7 +131,25 @@ const Membership = () => {
                   </div>
                 </motion.div>
 
-                {/* Stagger item */}
+                {/* Card 2: Associate Life Membership*/}
+                <motion.div
+                  className="bg-card-light dark:bg-card-dark p-8 rounded-lg shadow-lg border border-border-light dark:border-border-dark flex flex-col"
+                  variants={cardVariants}
+                  whileHover={{ y: -5, scale: 1.03 }}
+                >
+                  <h3 className="text-2xl font-display font-semibold text-primary mb-4">
+                    Associate Membership
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6 flex-grow text-justify">
+                    For Gastroenterologists, GI Surgeons, Hepatologists, and Researcher Scientists who wish to collaborate with the society. Includes event discounts and updates.
+                  </p>
+                  <div className="mt-auto">
+                    <p className="text-3xl font-bold text-text-light dark:text-heading-dark">₹7,500</p>
+                    <p className="text-gray-500 dark:text-gray-500">One-Time Payment</p>
+                  </div>
+                </motion.div>
+
+                {/* Card 3: Ad Hoc Membership */}
                 <motion.div
                   className="bg-card-light dark:bg-card-dark p-8 rounded-lg shadow-lg border border-border-light dark:border-border-dark flex flex-col"
                   variants={cardVariants}
@@ -154,7 +171,7 @@ const Membership = () => {
 
             {/* Section scroll-in animation */}
             <motion.div
-              className="mb-16"
+              className="mb-16 max-w-4xl mx-auto"
               variants={sectionVariant}
               initial="hidden"
               whileInView="visible"
