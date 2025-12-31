@@ -285,7 +285,7 @@ const MembershipRegistration = () => {
                       <p><strong>Account Name:</strong> Society of Gastrointestinal & Hepato-Pancreatobiliary Pathologist's</p>
                       <p><strong>Bank:</strong> Bank of Baroda</p>
                       <p><strong>Account No:</strong> 26020100024967</p>
-                      <p><strong>IFSC Code:</strong> BARB0RAMEEL <br/><span className="text-xs text-red-500">(5th character is Zero)</span></p>
+                      <p><strong>IFSC Code:</strong> BARB0RAMDEL <br/><span className="text-xs text-red-500">(5th character is Zero)</span></p>
                       <p><strong>Branch:</strong> Dr. RML Hospital, New Delhi</p>
                   </div>
                 </div>

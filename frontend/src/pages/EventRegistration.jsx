@@ -240,7 +240,7 @@ const EventRegistration = () => {
                 <p><strong>Account Name:</strong> SGIHPBP's</p>
                 <p><strong>Bank:</strong> Bank of Baroda</p>
                 <p><strong>A/c No:</strong> 26020100024967</p>
-                <p><strong>IFSC:</strong> BARB0RAMEEL <br /><span className="text-[10px] text-red-500">(5th char is Zero)</span></p>
+                <p><strong>IFSC:</strong> BARB0RAMDEL <br /><span className="text-[10px] text-red-500">(5th char is Zero)</span></p>
                 <p><strong>Branch:</strong> Dr. RML Hospital, New Delhi</p>
               </div>
               <div className="flex flex-col items-center pt-2 border-t">
