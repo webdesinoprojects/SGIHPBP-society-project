@@ -163,7 +163,8 @@ const MembersDetails = () => {
                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors">search</span>
                  <input 
                    type="text" 
-                   placeholder="Name, Membership ID, Email, or Mobile..." 
+                   // placeholder="Name, Membership ID, Email, or Mobile..." 
+                   placeholder="Name, Membership ID, or Email..." 
                    value={inputSearch} 
                    onChange={(e) => setInputSearch(e.target.value)}
                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -236,7 +237,7 @@ const MembersDetails = () => {
               </div>
               <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Search Directory</h3>
               <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto text-sm">
-                Use the search box above to find members by name, ID, email, or phone number.
+                Use the search box above to find members by name, ID, or email.
               </p>
             </motion.div>
           ) : (
@@ -297,12 +298,17 @@ const MembersDetails = () => {
 
                            {/* Row 1, Col 2 */}
                            <div className="flex items-start gap-2 min-w-0">
-                                <span className="material-symbols-outlined text-[18px] text-gray-400 mt-0.5 flex-shrink-0">mail</span>
                                 {member.email ? (
-                                  <a href={`mailto:${member.email}`} className="text-primary hover:underline break-all leading-tight">
-                                    {member.email}
+                                  <a href={`mailto:${member.email.trim()}`} className="flex items-start gap-2 group min-w-0">
+                                     <span className="material-symbols-outlined text-[18px] text-gray-400 mt-0.5 flex-shrink-0 group-hover:text-primary transition-colors">mail</span>
+                                     <span className="text-primary group-hover:underline break-all leading-tight">{member.email}</span>
                                   </a>
-                                ) : <span>-</span>}
+                                ) : (
+                                  <div className="flex items-start gap-2">
+                                     <span className="material-symbols-outlined text-[18px] text-gray-400 mt-0.5 flex-shrink-0">mail</span>
+                                     <span>-</span>
+                                  </div>
+                                )}
                            </div>
 
                            {/* Row 2, Col 1 */}
@@ -312,28 +318,28 @@ const MembersDetails = () => {
                            </div> */}
 
                            {/* Row 2, Col 2 */}
-                           <div className="flex items-start gap-2 min-w-0">
+                           {/* <div className="flex items-start gap-2 min-w-0">
                                 <span className="material-symbols-outlined text-[18px] text-gray-400 mt-0.5 flex-shrink-0">call</span>
                                 {member.phone ? (
                                   <a href={`tel:${member.phone}`} className="text-gray-700 dark:text-gray-300 hover:text-primary transition-colors">
                                     {member.phone}
                                   </a>
                                 ) : <span>-</span>}
-                           </div>
+                           </div> */}
                         </div>
 
                         {/* 3. Footer: Action Buttons */}
                         <div className="flex gap-3 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
                           {member.email && (
-                            <a href={`mailto:${member.email}`} className="flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold text-primary bg-primary/5 hover:bg-primary/10 rounded transition-colors">
+                            <a href={`mailto:${member.email.trim()}`} className="flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold text-primary bg-primary/5 hover:bg-primary/10 rounded transition-colors">
                               <span className="material-symbols-outlined text-sm">mail</span> Email
                             </a>
                           )}
-                          {member.phone && (
+                          {/* {member.phone && (
                             <a href={`tel:${member.phone}`} className="flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 rounded transition-colors">
                               <span className="material-symbols-outlined text-sm">call</span> Call
                             </a>
-                          )}
+                          )} */}
                         </div>
                       </div>
                     ))}
@@ -353,7 +359,7 @@ const MembersDetails = () => {
                       <th className="px-6 py-4 border-b dark:border-gray-600">Qualification</th>
                       {/* <th className="px-6 py-4 border-b dark:border-gray-600">Location</th> */}
                       <th className="px-6 py-4 border-b dark:border-gray-600">Email</th>
-                      <th className="px-6 py-4 border-b dark:border-gray-600">Phone</th>
+                      {/* <th className="px-6 py-4 border-b dark:border-gray-600">Phone</th> */}
                       <th className="px-6 py-4 border-b dark:border-gray-600 text-center">Category</th>
                     </tr>
                   </thead>
@@ -367,7 +373,7 @@ const MembersDetails = () => {
                           <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div></td>
                           {/* <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div></td> */}
                           <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32"></div></td>
-                          <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div></td>
+                          {/* <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div></td> */}
                           <td className="px-6 py-4"><div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-16 mx-auto"></div></td>
                         </tr>
                       ))
@@ -391,14 +397,14 @@ const MembersDetails = () => {
                           {/* </td> */}
                           <td className="px-6 py-4">
                             {member.email ? (
-                               <a href={`mailto:${member.email}`} className="text-primary hover:underline font-medium">
+                               <a href={`mailto:${member.email.trim()}`} className="text-primary hover:underline font-medium">
                                  {member.email}
                                </a>
                             ) : <span className="text-gray-400">-</span>}
                           </td>
-                          <td className="px-6 py-4 text-gray-600 dark:text-gray-400 font-mono text-xs">
+                          {/* <td className="px-6 py-4 text-gray-600 dark:text-gray-400 font-mono text-xs">
                              {member.phone || <span className="text-gray-300">-</span>}
-                          </td>
+                          </td> */}
                           <td className="px-6 py-4 text-center">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border ${
                               (member.category || "").includes('Life')
@@ -412,7 +418,7 @@ const MembersDetails = () => {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="7" className="px-6 py-16 text-center text-gray-500">
+                        <td colSpan="5" className="px-6 py-16 text-center text-gray-500">
                            No members found matching your criteria.
                         </td>
                       </tr>
