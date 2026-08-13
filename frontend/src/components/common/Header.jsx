@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import Logo from '../../assets/Logo_SGIHPBPS.png'
+import Logo from '../../assets/logo.png';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../../hooks/useAuth';
 
 const Header = ({ currentPage }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, isAdmin, signOut } = useAuth();
 
   useEffect(() => {
     if (isMenuOpen) {
@@ -69,6 +71,11 @@ const Header = ({ currentPage }) => {
     }),
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+    setIsMenuOpen(false);
+  };
+
   const navLinks = [
     { to: '/', label: 'Home', page: 'home', icon: 'home' },
     {
@@ -77,6 +84,7 @@ const Header = ({ currentPage }) => {
       dropdown: [
         { to: '/about-us', label: 'Our Mission & Vision', icon: 'info' },
         { to: '/president-message', label: "President's Message", icon: 'person' },
+        { to: '/about-us#vice-president-message', label: "Vice President's Message", icon: 'person_outline' },
         { to: '/secretary-message', label: "Secretary General's Message", icon: 'person_outline' },
       ],
     },
@@ -93,6 +101,7 @@ const Header = ({ currentPage }) => {
     },
     // { to: '/membership', label: 'Membership', page: 'membership', icon: 'card_membership' }, // This line is replaced
     // 1. === MODIFICATION END ===
+    { to: '/SGIHPBP-election', label: 'Election', page: 'SGIHPBP-election', icon: 'how_to_vote' },
     {
       label: 'Academics & Events',
       page: 'academics_events', // Base page key for highlighting
@@ -103,6 +112,7 @@ const Header = ({ currentPage }) => {
       ],
     },
     { to: '/publications', label: 'Publications', page: 'publications', icon: 'article' },
+    { to: '/gallery', label: 'Gallery', page: 'gallery', icon: 'photo_library' },
     { to: '/contact-us', label: 'Contact Us', page: 'contact-us', icon: 'contact_mail' },
   ];
 
@@ -111,6 +121,7 @@ const Header = ({ currentPage }) => {
     { to: '/about-us', label: 'About Us', page: 'about-us', icon: 'info' },
     { to: '/governing-body', label: 'Governing Body', page: 'governing-body', icon: 'groups' },
     { to: '/president-message', label: "President's Message", page: 'president-message', icon: 'person' },
+    { to: '/about-us#vice-president-message', label: "Vice President's Message", page: 'about-us', icon: 'person_outline' },
     { to: '/secretary-message', label: "Secretary General's Message", page: 'secretary-message', icon: 'person_outline' },
     // 2. === MODIFICATION START ===
     // Update mobile links
@@ -118,10 +129,12 @@ const Header = ({ currentPage }) => {
     { to: '/members-directory', label: 'Member Directory', page: 'members-directory', icon: 'list_alt' },
     // { to: '/membership', label: 'Membership', page: 'membership', icon: 'card_membership' }, // This line is replaced
     // 2. === MODIFICATION END ===
+    { to: '/SGIHPBP-election', label: 'Election', page: 'SGIHPBP-election', icon: 'how_to_vote' },
     { to: '/academics-events', label: 'Upcoming Events', page: 'academics-events', icon: 'school' },
     { to: '/journal-search', label: 'Journal Search', page: 'journal-search', icon: 'find_in_page' },
     { to: '/case-of-the-month', label: 'Case of the Month', page: 'case-of-the-month', icon: 'quiz' },
     { to: '/publications', label: 'Publications', page: 'publications', icon: 'article' },
+    { to: '/gallery', label: 'Gallery', page: 'gallery', icon: 'photo_library' },
     { to: '/contact-us', label: 'Contact Us', page: 'contact-us', icon: 'contact_mail' },
   ];
 
@@ -129,28 +142,28 @@ const Header = ({ currentPage }) => {
     // Wrap with a React Fragment
     <>
       <header className="bg-white/80 dark:bg-primary/80 backdrop-blur-sm sticky top-0 z-50 shadow-md">
-        <nav className="container mx-auto p-3 h-20 flex items-center">
+        <nav className="w-full px-3 sm:px-6 lg:px-8 py-3 min-h-[5rem] flex items-center">
           <div className="flex items-center justify-between w-full">
-            <Link to="/" className="flex items-center space-x-3">
+            <Link to="/" className="flex min-w-0 items-center gap-3">
               <motion.img
-                alt="SGIHPBP's of India Logo"
-                className="h-12 w-12" // Reduced logo size
+                alt="SGIHPBPS Logo"
+                className="h-11 w-11 flex-shrink-0 sm:h-12 sm:w-12"
                 src={Logo}
               />
-              <div className="font-display font-bold text-xs sm:text-sm text-primary dark:text-white md:block w-48 leading-tight">
+              <div className="safe-wrap min-w-0 max-w-[calc(100vw-7rem)] font-display text-[11px] font-bold leading-tight text-primary dark:text-white sm:max-w-[13rem] sm:text-xs lg:w-56 lg:max-w-none xl:w-64">
                 Society of Gastrointestinal & Hepato-Pancreatobiliary Pathologist's of India
               </div>
             </Link>
 
-            <div className="hidden lg:flex items-center space-x-6">
+            <div className="hidden lg:flex items-center space-x-2 xl:space-x-4">
               {navLinks.map((link) =>
                 link.dropdown ? (
-                  <div key={link.label} className="relative group">
+                  <div key={link.label} className="relative group pb-3 -mb-3">
                     <motion.button
                       variants={navLinkVariants}
                       whileHover="hover"
                       // This logic correctly highlights the parent tab if a child page is active
-                      className={`nav-link font-semibold text-lg flex items-center transition-colors ${
+                      className={`nav-link font-semibold text-sm xl:text-base flex items-center transition-colors ${
                         currentPage === link.page || link.dropdown.some(item => item.to.slice(1) === currentPage) 
                           ? 'text-gold-DEFAULT dark:text-gold-light' 
                           : 'text-gray-800 dark:text-white'
@@ -162,7 +175,7 @@ const Header = ({ currentPage }) => {
                       initial={{ opacity: 0, y: 10 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3 }}
-                      className="absolute hidden group-hover:block bg-white dark:bg-primary border border-gray-200 dark:border-gray-700 rounded shadow-lg mt-2 py-1 w-56"
+                      className="absolute left-0 top-full z-50 hidden group-hover:block bg-white dark:bg-primary border border-gray-200 dark:border-gray-700 rounded shadow-lg pt-3 pb-1 w-56"
                     >
                       {link.dropdown.map((item) => (
                         <Link
@@ -184,13 +197,41 @@ const Header = ({ currentPage }) => {
                   <motion.div key={link.to} variants={navLinkVariants} whileHover="hover">
                     <Link
                       to={link.to}
-                      className={`nav-link font-semibold text-lg transition-colors ${currentPage === link.page ? 'text-gold-DEFAULT dark:text-gold-light' : 'text-gray-800 dark:text-white'
+                      title={link.title}
+                      className={`nav-link font-semibold text-sm xl:text-base transition-colors ${currentPage === link.page ? 'text-gold-DEFAULT dark:text-gold-light' : 'text-gray-800 dark:text-white'
                         }`}
                     >
                       {link.label}
                     </Link>
                   </motion.div>
                 )
+              )}
+            </div>
+
+            <div className="hidden lg:flex items-center gap-2 ml-2 xl:gap-3 xl:ml-4">
+              {user ? (
+                <>
+                  <Link
+                    to={isAdmin ? '/admin' : '/account'}
+                    className="px-3 py-1.5 xl:px-4 xl:py-2 rounded-full bg-primary text-white text-xs xl:text-sm font-bold hover:bg-blue-900 transition-colors whitespace-nowrap"
+                  >
+                    {isAdmin ? 'Admin' : 'Account'}
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    className="px-3 py-1.5 xl:px-4 xl:py-2 rounded-full border border-primary text-primary dark:border-white dark:text-white text-xs xl:text-sm font-bold hover:bg-primary hover:text-white transition-colors whitespace-nowrap"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/login"
+                  className="px-3 py-1.5 xl:px-4 xl:py-2 rounded-full bg-gold-DEFAULT text-primary text-xs xl:text-sm font-bold hover:bg-yellow-400 transition-colors whitespace-nowrap"
+                >
+                  Login
+                </Link>
               )}
             </div>
 
@@ -207,16 +248,16 @@ const Header = ({ currentPage }) => {
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
-            className="lg:hidden fixed top-0 left-0 w-full h-full bg-white dark:bg-primary z-50" // Added z-50 just in case
+            className="lg:hidden fixed top-0 left-0 w-full h-full bg-white dark:bg-primary z-50 flex flex-col"
             variants={menuVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
           >
-            <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700 h-20">
-              <Link to="/" className="flex items-center space-x-3" onClick={() => setIsMenuOpen(false)}>
-                <img alt="SGIHPBP's of India Logo" className="h-12 w-12" src={Logo} />
-                <div className="font-display font-bold text-xs text-primary dark:text-white w-48 leading-tight">
+            <div className="flex-shrink-0 flex items-center justify-between gap-3 p-3 border-b border-gray-200 dark:border-gray-700 min-h-[5rem]">
+              <Link to="/" className="flex min-w-0 items-center gap-3" onClick={() => setIsMenuOpen(false)}>
+                <img alt="SGIHPBPS Logo" className="h-11 w-11 flex-shrink-0 sm:h-12 sm:w-12" src={Logo} />
+                <div className="safe-wrap min-w-0 max-w-[calc(100vw-7.5rem)] font-display text-[11px] font-bold leading-tight text-primary dark:text-white">
                   Society of Gastrointestinal & Hepato-Pancreatobiliary Pathologist's of India
                 </div>
               </Link>
@@ -226,7 +267,7 @@ const Header = ({ currentPage }) => {
                 </motion.div>
               </button>
             </div>
-            <div className="px-4 py-2 space-y-1">
+            <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-2 space-y-1">
               {mobileNavLinks.map((link, i) => ( // 4. This uses the updated mobileNavLinks
                 <motion.div
                   key={link.to}
@@ -248,6 +289,38 @@ const Header = ({ currentPage }) => {
                   </Link>
                 </motion.div>
               ))}
+
+              <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+                {user ? (
+                  <>
+                    <Link
+                      to={isAdmin ? '/admin' : '/account'}
+                      className="flex items-center w-full text-left py-3 pl-4 font-semibold transition-colors text-xl text-gray-800 dark:text-white hover:text-[#D4AF37] dark:hover:text-gold-light"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <span className="material-icons-outlined mr-4">{isAdmin ? 'admin_panel_settings' : 'account_circle'}</span>
+                      {isAdmin ? 'Admin Dashboard' : 'My Account'}
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={handleSignOut}
+                      className="flex items-center w-full text-left py-3 pl-4 font-semibold transition-colors text-xl text-red-600 hover:text-red-700"
+                    >
+                      <span className="material-icons-outlined mr-4">logout</span>
+                      Logout
+                    </button>
+                  </>
+                ) : (
+                  <Link
+                    to="/login"
+                    className="flex items-center w-full text-left py-3 pl-4 font-semibold transition-colors text-xl text-gray-800 dark:text-white hover:text-[#D4AF37] dark:hover:text-gold-light"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <span className="material-icons-outlined mr-4">login</span>
+                    Login
+                  </Link>
+                )}
+              </div>
             </div>
           </motion.div>
         )}

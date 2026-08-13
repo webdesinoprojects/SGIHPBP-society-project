@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import Logo from '../../assets/Logo_SGIHPBPS.png';
+import Logo from '../../assets/logo.png';
 import { motion } from 'framer-motion';
 
 const Footer = () => {
@@ -42,7 +42,7 @@ const Footer = () => {
           <motion.div variants={itemVariants}>
             <div className="flex items-center space-x-3 mb-4">
               <img
-                alt="SGIHPBP's of India Logo"
+                alt="SGIHPBPS Logo"
                 className="h-14 w-14"
                 src={Logo}
               />
@@ -116,7 +116,7 @@ const Footer = () => {
                 78, LD Block, PITAMPURA,<br />New Delhi-110034
               </li>
               <li className="text-gray-300">
-                Email: <a href="mailto:SGIHPBP'sindia2025@gmail.com" className="text-gold-light hover:underline">SGIHPBP'sindia2025@gmail.com</a>
+                Email: <a href="mailto:sgihpbpsindia2025@gmail.com" className="text-gold-light hover:underline">sgihpbpsindia2025@gmail.com</a>
               </li>
               <li className="text-gray-300">
                 Phone: <a href="tel:+919873898110" className="text-gold-light hover:underline">9873898110</a>

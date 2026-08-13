@@ -1,11 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import SEO from '../components/SEO';
 import PaymentQR from '../assets/qrcode.jpg';
+import MarkdownBlock from '../components/common/MarkdownBlock';
+import { loadMembershipPortalData, fallbackPortalSettings } from '../lib/membershipConfig';
 
 const MembershipRegistration = () => {
   // State to toggle between Registration and Status Check
   const [activeTab, setActiveTab] = useState('register'); // 'register' or 'status'
+  
+  // --- STATE: SETTINGS ---
+  const [settings, setSettings] = useState(fallbackPortalSettings);
+  const [loadingSettings, setLoadingSettings] = useState(true);
+
+  useEffect(() => {
+    loadMembershipPortalData().then((data) => {
+      setSettings(data.settings);
+      setLoadingSettings(false);
+    });
+  }, []);
 
   // --- STATE: NEW REGISTRATION ---
   const [formData, setFormData] = useState({
@@ -263,6 +276,18 @@ const MembershipRegistration = () => {
             >
               Check Status / Download
             </button>
+            {settings.promo_enabled && (
+              <button 
+                onClick={() => setActiveTab('promotional')}
+                className={`px-6 py-2 rounded-full font-bold transition-all ${
+                  activeTab === 'promotional' 
+                  ? 'bg-white text-primary shadow-lg' 
+                  : 'bg-primary-dark text-white/70 border border-white/30 hover:bg-primary-light'
+                }`}
+              >
+                Promotional Drive
+              </button>
+            )}
           </div>
         </div>
 
@@ -578,6 +603,19 @@ const MembershipRegistration = () => {
                 <p>Unable to connect to the server. Please try again later.</p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* === TAB 3: PROMOTIONAL DRIVE === */}
+        {activeTab === 'promotional' && settings.promo_enabled && (
+          <div className="p-12 max-w-4xl mx-auto min-h-[400px]">
+            <div className="bg-yellow-50 dark:bg-gray-700 border border-yellow-200 dark:border-gray-600 rounded-xl p-8 shadow-sm">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">{settings.promo_title || 'Promotional Membership Drive'}</h2>
+              
+              <div className="space-y-6 text-gray-800 dark:text-gray-200 text-lg">
+                <MarkdownBlock content={settings.promo_markdown} />
+              </div>
+            </div>
           </div>
         )}
 

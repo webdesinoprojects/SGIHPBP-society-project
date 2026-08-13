@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import SEO from '../components/SEO';
+import { submitContactMessage } from '../lib/messages';
 
 const ContactUs = () => {
   const [formData, setFormData] = useState({
@@ -24,8 +25,6 @@ const ContactUs = () => {
     email: 'sgihpbpsindia2025@gmail.com'
   });
 
-  const GOOGLE_SCRIPT_URL = import.meta.env.VITE_API_URL;
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -34,46 +33,52 @@ const ContactUs = () => {
     }));
   };
 
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      email: '',
+      subject: '',
+      message: '',
+      website_url: ''
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmissionState({ loading: true, success: false, error: null });
 
-    try {
-      await fetch(GOOGLE_SCRIPT_URL, {
-        method: "POST",
-        // 🚨 Removed 'mode: no-cors' to allow error handling
-        body: JSON.stringify({
-          action: "submit_contact",
-          ...formData
-        }),
-      });
-
-      setSubmissionState({
-        loading: false,
-        success: true,
-        error: null
-      });
-
-      setFormData({
-        name: '',
-        email: '',
-        subject: '',
-        message: '',
-        website_url: ''
-      });
-
+    // 🍯 Honeypot: silently accept bot submissions without storing them.
+    if (formData.website_url) {
+      setSubmissionState({ loading: false, success: true, error: null });
+      resetForm();
       setTimeout(() => {
         setSubmissionState(prev => ({ ...prev, success: false }));
       }, 5000);
+      return;
+    }
 
-    } catch (error) {
-      console.error("Error:", error);
+    const result = await submitContactMessage({
+      name: formData.name,
+      email: formData.email,
+      subject: formData.subject,
+      message: formData.message,
+    });
+
+    if (!result.ok) {
       setSubmissionState({
         loading: false,
         success: false,
-        error: `Sorry, we couldn't send your message. Please try again later or email us directly at ${contactInfo.email}.`
+        error: result.message || `Sorry, we couldn't send your message. Please email us directly at ${contactInfo.email}.`,
       });
+      return;
     }
+
+    setSubmissionState({ loading: false, success: true, error: null });
+    resetForm();
+
+    setTimeout(() => {
+      setSubmissionState(prev => ({ ...prev, success: false }));
+    }, 5000);
   };
 
   return (

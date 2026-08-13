@@ -1,145 +1,129 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import { UserCircle2 } from 'lucide-react';
 import SEO from '../components/SEO';
-import DrAnjaliAmarapurkar from '../assets/Dr-Anjali-Amarapurkar,-Vice-President.jpg';
-import DrArchanaRadstogi from '../assets/Dr-Archana-Radstogi,-Governing-Body-Member.jpg';
-import DrArvindAhuja from '../assets/Dr-Arvind-Ahuja,-Treasurer.jpg';
-import DrChhaganBihari from '../assets/Dr-Chhagan-Bihari,-Governing-Body-Member.jpg';
-import DrKimVaiphei from '../assets/Dr-Kim-Vaiphei,-Governing-Body-Member.jpg';
-import DrLipikaLipi from '../assets/Dr-Lipika-Lipi,-Joint-Treasurer.jpg';
-import DrMalaBaneerjee from '../assets/Dr-Mala-Baneerjee,-Govering-Body-Member.jpg';
-import DrMuktaRamadwar from '../assets/Dr-Mukta-Ramadwar,-Governing-Body-Member.jpg';
-import DrMukulVij from '../assets/Dr-Mukul-Vij,-Govering-Body-Member.jpg';
-import DrNirajKumari from '../assets/Dr-Niraj-Kumari,-Governing-body-Member.jpeg';
-import DrPrasenjitDas from '../assets/Dr-Prasenjit-Das,-Secrertary-General.jpg';
-import DrRajivKaushal from '../assets/Dr-Rajiv-Kaushal,-Governing-Body-Member.jpg';
-import DrRajniYadav from '../assets/Dr-Rajni-Yadav,-Governing-Body-Member.png';
-import DrSurbhiGoyal from '../assets/Dr-Surbhi-Goyal,-Governing-Body-Member.jpg';
-import DrVatsalaMisra from '../assets/Dr-Vatsala-Misra,-Governing-Body-Member.jpg';
-import DrRoopaPaulose from '../assets/Dr-Roopa-R-Paulose,-Governing-Body-Member.jpg';
-import DrPujaSakhuja from '../assets/Dr-Puja-Sakhuja,-President.jpg';
-import DrMunitaMenon from '../assets/Dr-Munita-Menon,-Governing-Body-Member.jpg';
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
+import { listGoverningBodyMembers } from '../lib/content';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { logDevError } from '../lib/logger';
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-  },
+  visible: { opacity: 1, y: 0 },
 };
 
-const GoverningBody = () => {
-  // Office Bearers data
-  const officeBearers = [
-    { name: "Prof. Puja Sakhuja", position: "President", image: DrPujaSakhuja },
-    { name: "Prof. Anjali Amarapurkar", position: "Vice-President", image: DrAnjaliAmarapurkar },
-    { name: "Prof. Prasenjit Das", position: "Secretary General", image: DrPrasenjitDas },
-    { name: "Prof. Arvind Ahuja", position: "Treasurer", image: DrArvindAhuja },
-    { name: "Dr. Lipika Lipi", position: "Co-Treasurer", image: DrLipikaLipi }
-  ];
-
-  // Governing Body Members data
-  const governingBodyMembers = [
-    { name: "Prof. Puja Sakhuja", position: "President", image: DrPujaSakhuja },
-    { name: "Prof. Anjali Amarapurkar", position: "Vice-President", image: DrAnjaliAmarapurkar },
-    { name: "Prof. Prasenjit Das", position: "Secretary General", image: DrPrasenjitDas },
-    { name: "Prof. Arvind Ahuja", position: "Treasurer", image: DrArvindAhuja },
-    { name: "Dr. Lipika Lipi", position: "Co-Treasurer", image: DrLipikaLipi },
-    { name: "Prof. Kim Vaiphei", position: "Patron", image: DrKimVaiphei },
-    { name: "Prof. Vatsala Misra", position: "Patron", image: DrVatsalaMisra },
-    { name: "Prof. Mukta Ramadwar", position: "EC Member", image: DrMuktaRamadwar },
-    { name: "Prof. Archana Rastogi", position: "EC Member", image: DrArchanaRadstogi },
-    { name: "Dr. Roopa Paulose", position: "EC Member", image: DrRoopaPaulose },
-    { name: "Dr. Chagan Bihari", position: "EC Member", image: DrChhaganBihari },
-    { name: "Dr. Rajni Yadav", position: "EC Member", image: DrRajniYadav },
-    { name: "Dr. Mala Baneerjee", position: "EC Member", image: DrMalaBaneerjee },
-    { name: "Prof. Niraj Kumari", position: "EC Member", image: DrNirajKumari },
-    { name: "Prof. Munita Bal", position: "EC Member", image: DrMunitaMenon },
-    { name: "Dr. Mukul Vij", position: "EC Member", image: DrMukulVij },
-    { name: "Dr. Rajeev Kumar", position: "EC Member", image: DrRajivKaushal },
-    { name: "Dr. Surbhi Goyal", position: "EC Member", image: DrSurbhiGoyal },
-  ];
-
-  // National Advisors data
-  const nationalAdvisors = [
-    { name: "Prof. Siddhartha Datta Gupta", },
-    { name: "Prof. Asim Das", },
-    { name: "Prof. Rachana Chaturvedi", },
-    { name: "Prof. Nuzhat Hussain", },
-    { name: "Prof. Ritambhra Nada", },
-    { name: "Prof. Anna Pulimood", },
-
-  ];
-
-  // International Advisors data
-  const internationalAdvisors = [
-    { name: "Prof. Vikram Deshpande", },
-    { name: "Prof. Dhanpat Jain", },
-    { name: "Prof. Sanjay Kakkar", },
-    { name: "Prof. Amitabh Srivatava", },
-    { name: "Prof. Deepti Dhall", }
-  ];
-
-  const MemberCard = ({ member, isOfficer = false, showImage = true }) => (
-    <motion.div
-      className={`rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 ${isOfficer ? 'p-6' : 'p-5'} text-center shadow-sm transition-shadow`}
-      whileHover={{ scale: 1.03, y: -5, boxShadow: "0px 10px 15px -3px rgba(0,0,0,0.1)" }}
-      transition={{ type: 'spring', stiffness: 300 }}
-    >
-      {showImage && member.image && (
-        <div className={`${isOfficer ? 'w-32 h-32 mb-4' : 'w-24 h-24 mb-4'} mx-auto`}>
-          <img
-            src={member.image}
-            className="w-full h-full rounded-full object-contain border-2 border-gold"
-          />
+const OfficerCard = ({ member }) => (
+  <motion.div
+    className="rounded-lg border border-gray-200 bg-white p-6 text-center shadow-sm dark:border-gray-700 dark:bg-gray-800"
+    whileHover={{ scale: 1.02, y: -4, boxShadow: '0px 10px 15px -3px rgba(0,0,0,0.1)' }}
+    transition={{ type: 'spring', stiffness: 300 }}
+  >
+    <div className="mx-auto mb-4 h-32 w-32">
+      {member.image_url ? (
+        <img src={member.image_url} alt={member.name} className="h-full w-full rounded-full border-2 border-gold object-cover" />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center rounded-full border-2 border-gold bg-gray-50">
+          <UserCircle2 size={64} className="text-gray-400" aria-hidden="true" />
         </div>
       )}
-      <h3 className={`text-primary dark:text-white ${isOfficer ? 'text-lg' : 'text-base'} font-bold mb-1`}>
-        {member.name}
-      </h3>
-      <p className="text-gray-700 dark:text-gray-300 text-sm">
-        {member.position}
-      </p>
-    </motion.div>
-  );
+    </div>
+    <h3 className="mb-1 text-lg font-bold text-primary dark:text-white">{member.name}</h3>
+    <p className="text-sm text-gray-700 dark:text-gray-300">{member.position}</p>
+    {member.registration_no && <p className="mt-1 text-xs font-semibold uppercase tracking-widest text-gray-500">{member.registration_no}</p>}
+    <p className="mt-1 text-xs uppercase tracking-widest text-gray-500 dark:text-gray-400">SGIHPBP</p>
+  </motion.div>
+);
+
+const BodyMemberCard = ({ member }) => (
+  <motion.div
+    className="rounded-lg border border-gray-200 bg-white p-5 text-center shadow-sm dark:border-gray-700 dark:bg-gray-800"
+    whileHover={{ scale: 1.02, y: -3, boxShadow: '0px 8px 12px -3px rgba(0,0,0,0.08)' }}
+    transition={{ type: 'spring', stiffness: 300 }}
+  >
+    <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-gray-700">
+      {member.image_url ? (
+        <img src={member.image_url} alt={member.name} className="h-full w-full object-cover" />
+      ) : (
+        <UserCircle2 size={44} className="text-gray-400 dark:text-gray-300" aria-hidden="true" />
+      )}
+    </div>
+    <h3 className="mb-1 text-base font-bold text-primary dark:text-white">{member.name}</h3>
+    <p className="text-sm text-gray-700 dark:text-gray-300">{member.position}</p>
+  </motion.div>
+);
+
+const AdvisorCard = ({ member }) => (
+  <motion.div
+    className="rounded-lg border border-gray-200 bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-800 flex items-center justify-center min-h-[5rem]"
+    whileHover={{ scale: 1.02, y: -2, boxShadow: '0px 4px 6px -1px rgba(0,0,0,0.1)' }}
+    transition={{ type: 'spring', stiffness: 300 }}
+  >
+    <h3 className="text-base font-bold text-primary dark:text-white">{member.name}</h3>
+  </motion.div>
+);
+
+const GoverningBody = () => {
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const loadMembers = useCallback(() => {
+    setError('');
+    listGoverningBodyMembers()
+      .then((rows) => setMembers(rows))
+      .catch((error) => {
+        logDevError('Unable to load governing body members:', error);
+        setError('Unable to load governing body members.');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  useEffect(() => {
+    loadMembers();
+
+    if (!isSupabaseConfigured) return undefined;
+
+    const channel = supabase
+      .channel('public-governing-body-members')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'governing_body_members' }, loadMembers)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [loadMembers]);
+
+  const { officeBearers, bodyMembers, nationalAdvisors, internationalAdvisors } = useMemo(() => {
+    const activeOfficeBearers = members.filter((member) => member.section === 'office_bearer');
+    const activeBodyMembers = members.filter((member) => member.section === 'governing_member');
+    const activeNationalAdvisors = members.filter((member) => member.section === 'national_advisor');
+    const activeInternationalAdvisors = members.filter((member) => member.section === 'international_advisor');
+    return {
+      officeBearers: activeOfficeBearers,
+      bodyMembers: activeBodyMembers,
+      nationalAdvisors: activeNationalAdvisors,
+      internationalAdvisors: activeInternationalAdvisors,
+    };
+  }, [members]);
 
   return (
     <motion.div
-      className="bg-background-light dark:bg-background-dark min-h-screen"
+      className="min-h-screen bg-background-light dark:bg-background-dark"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <SEO 
-        title="Governing Body" 
+      <SEO
+        title="Governing Body"
         description="Meet the distinguished office bearers and governing body members of SGIHPBP."
-        keywords="SGIHPBP governing body, pathology leadership, medical society board"
+        keywords="SGIHPBP governing body, pathology leadership, SGIHPBP India"
       />
+
       <main className="flex-1">
         <div className="container mx-auto px-4 py-12 md:py-20">
           <div className="mx-auto max-w-6xl">
-            {/* <motion.div
-              className="mb-12 text-center"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <h1 className="text-primary dark:text-white text-4xl md:text-5xl font-black tracking-tighter">
-                Governing Body
-              </h1>
-            </motion.div> */}
-
-            {/* Office Bearers Section */}
             <section className="mb-16">
               <motion.div
                 className="relative mb-8 text-center"
@@ -147,103 +131,96 @@ const GoverningBody = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
               >
-                <h1 className="text-primary dark:text-white text-3xl md:text-4xl font-bold tracking-tight">
+                <h1 className="text-3xl font-bold tracking-tight text-primary dark:text-white md:text-4xl">
                   Office Bearers
                 </h1>
-                <div className="absolute inset-x-0 bottom-[-8px] mx-auto h-0.5 w-20 bg-gold-DEFAULT"></div>
+                <div className="absolute inset-x-0 bottom-[-8px] mx-auto h-0.5 w-20 bg-gold-DEFAULT" />
               </motion.div>
+
               <motion.div
                 className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
-                variants={containerVariants}
-                initial="hidden"
-                // *** THE FIX: Use whileInView to trigger on scroll ***
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.2 }} // Triggers when 20% is in view
               >
-                {officeBearers.map((member, index) => (
-                  <motion.div key={index} variants={itemVariants}>
-                    <MemberCard member={member} isOfficer={true} />
+                {loading && <SectionState text="Loading office bearers..." />}
+                {!loading && error && <SectionState text={error} tone="error" />}
+                {!loading && !error && officeBearers.length === 0 && <SectionState text="No office bearers have been published yet." />}
+                {!loading && !error && officeBearers.map((member, index) => (
+                  <motion.div key={member.id} variants={itemVariants} initial="hidden" animate="visible" transition={{ delay: index * 0.04 }}>
+                    <OfficerCard member={member} />
                   </motion.div>
                 ))}
               </motion.div>
             </section>
 
-            {/* Governing Body Members Section */}
-            <section className="mb-16">
-              <div className="relative mb-8 text-center">
-                <h2 className="text-primary dark:text-white text-3xl md:text-4xl font-bold tracking-tight">
-                  Governing Body Members
-                </h2>
-                <div className="absolute inset-x-0 bottom-[-8px] mx-auto h-0.5 w-20 bg-gold-DEFAULT"></div>
-              </div>
-              <motion.div
-                className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
-                variants={containerVariants}
-                initial="hidden"
-                // *** THE FIX: Use whileInView to trigger on scroll ***
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.2 }}
-              >
-                {governingBodyMembers.map((member, index) => (
-                  <motion.div key={index} variants={itemVariants}>
-                    <MemberCard member={member} />
-                  </motion.div>
-                ))}
-              </motion.div>
-            </section>
-
-            {/* National Advisors Section */}
-            <section className="mb-16">
-              <div className="relative mb-8 text-center">
-                <h2 className="text-primary dark:text-white text-3xl md:text-4xl font-bold tracking-tight">
-                  National Advisors
-                </h2>
-                <div className="absolute inset-x-0 bottom-[-8px] mx-auto h-0.5 w-20 bg-gold-DEFAULT"></div>
-              </div>
-              <motion.div
-                className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
-                variants={containerVariants}
-                initial="hidden"
-                // *** THE FIX: Use whileInView to trigger on scroll ***
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.2 }}
-              >
-                {nationalAdvisors.map((member, index) => (
-                  <motion.div key={index} variants={itemVariants}>
-                    <MemberCard member={member} showImage={false} />
-                  </motion.div>
-                ))}
-              </motion.div>
-            </section>
-
-            {/* International Advisors Section */}
             <section>
               <div className="relative mb-8 text-center">
-                <h2 className="text-primary dark:text-white text-3xl md:text-4xl font-bold tracking-tight">
-                  International Advisors
+                <h2 className="text-3xl font-bold tracking-tight text-primary dark:text-white md:text-4xl">
+                  Governing Body Members
                 </h2>
-                <div className="absolute inset-x-0 bottom-[-8px] mx-auto h-0.5 w-20 bg-gold-DEFAULT"></div>
+                <div className="absolute inset-x-0 bottom-[-8px] mx-auto h-0.5 w-20 bg-gold-DEFAULT" />
               </div>
+
               <motion.div
                 className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
-                variants={containerVariants}
-                initial="hidden"
-                // whileInView to trigger on scroll
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.2 }}
               >
-                {internationalAdvisors.map((member, index) => (
-                  <motion.div key={index} variants={itemVariants}>
-                    <MemberCard member={member} showImage={false} />
+                {loading && <SectionState text="Loading governing body members..." />}
+                {!loading && error && <SectionState text={error} tone="error" />}
+                {!loading && !error && bodyMembers.length === 0 && <SectionState text="No governing body members have been published yet." />}
+                {!loading && !error && bodyMembers.map((member, index) => (
+                  <motion.div key={member.id} variants={itemVariants} initial="hidden" animate="visible" transition={{ delay: index * 0.035 }}>
+                    <BodyMemberCard member={member} />
                   </motion.div>
                 ))}
               </motion.div>
             </section>
+
+            {(loading || nationalAdvisors.length > 0) && (
+              <section className="mt-16">
+                <div className="relative mb-8 text-center">
+                  <h2 className="text-3xl font-bold tracking-tight text-primary dark:text-white md:text-4xl">
+                    National Advisors
+                  </h2>
+                  <div className="absolute inset-x-0 bottom-[-8px] mx-auto h-0.5 w-20 bg-gold-DEFAULT" />
+                </div>
+                <motion.div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                  {loading && <SectionState text="Loading national advisors..." />}
+                  {!loading && !error && nationalAdvisors.map((member, index) => (
+                    <motion.div key={member.id} variants={itemVariants} initial="hidden" animate="visible" transition={{ delay: index * 0.03 }}>
+                      <AdvisorCard member={member} />
+                    </motion.div>
+                  ))}
+                </motion.div>
+              </section>
+            )}
+
+            {(loading || internationalAdvisors.length > 0) && (
+              <section className="mt-16">
+                <div className="relative mb-8 text-center">
+                  <h2 className="text-3xl font-bold tracking-tight text-primary dark:text-white md:text-4xl">
+                    International Advisors
+                  </h2>
+                  <div className="absolute inset-x-0 bottom-[-8px] mx-auto h-0.5 w-20 bg-gold-DEFAULT" />
+                </div>
+                <motion.div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                  {loading && <SectionState text="Loading international advisors..." />}
+                  {!loading && !error && internationalAdvisors.map((member, index) => (
+                    <motion.div key={member.id} variants={itemVariants} initial="hidden" animate="visible" transition={{ delay: index * 0.03 }}>
+                      <AdvisorCard member={member} />
+                    </motion.div>
+                  ))}
+                </motion.div>
+              </section>
+            )}
           </div>
         </div>
       </main>
     </motion.div>
   );
 };
+
+const SectionState = ({ text, tone = 'muted' }) => (
+  <div className={`col-span-full rounded-lg border p-8 text-center text-sm font-semibold ${tone === 'error' ? 'border-red-100 bg-red-50 text-red-700' : 'border-dashed border-gray-200 bg-white text-gray-500'}`}>
+    {text}
+  </div>
+);
 
 export default GoverningBody;

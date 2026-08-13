@@ -1,485 +1,312 @@
-import React, { useState, useEffect } from 'react'; 
+import { useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import SEO from '../components/SEO';
-import { useSearchParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-// Import MUI components
-import { Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { listPublicMemberDirectory, MEMBER_DIRECTORY_PAGE_SIZE } from '../lib/memberDirectory';
+import { getPublicMemberDirectoryNotice } from '../lib/memberDirectoryNotice';
 
-const categories = ['All', 'Life', 'Founder', 'Ad Hoc', 'Associate'];
-const ITEMS_PER_PAGE = 20;
+const EMAIL_TABS = [
+  { id: 'all', label: 'All Members' },
+  { id: 'with_email', label: 'With Email' },
+  { id: 'without_email', label: 'Without Email' },
+];
 
 const MembersDetails = () => {
-  // === 1. URL PARAMETER HANDLING ===
-  const [searchParams, setSearchParams] = useSearchParams();
-  
-  // Initial values from URL
-  const initialQuery = searchParams.get('m_search') || '';
-  const initialCat = searchParams.get('cat') || 'All';
-
-  // Input State (What the user is typing/selecting)
-  const [inputSearch, setInputSearch] = useState(initialQuery);
-  const [inputCategory, setInputCategory] = useState(initialCat);
-
-  // Active Filter State (What is actually being used to filter results)
-  const [activeSearch, setActiveSearch] = useState(initialQuery);
-  const [activeCategory, setActiveCategory] = useState(initialCat);
-
-  // Data State
   const [members, setMembers] = useState([]);
-  const [loading, setLoading] = useState(false); 
-  
-  // Pagination State
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [emailTab, setEmailTab] = useState('all');
+  const [page, setPage] = useState(1);
+  const [notice, setNotice] = useState(null);
+  const debouncedQuery = useDebouncedValue(searchQuery, 300);
 
-  // Track if a search has been performed
-  const [hasSearched, setHasSearched] = useState(!!initialQuery || initialCat !== 'All');
-
-  const GOOGLE_SCRIPT_URL = import.meta.env.VITE_API_URL;
-
-  // === 2. DATA FETCHING (Server-Side) ===
-  const fetchMembers = async (page, search, category) => {
-    setLoading(true);
-    
-    // Prepare payload for server-side pagination
-    const payload = {
-        action: "get_members",
-        page: page,
-        limit: ITEMS_PER_PAGE,
-        search: search,
-        category: category === 'All' ? '' : category 
-    };
-
-    try {
-      const response = await fetch(GOOGLE_SCRIPT_URL, {
-        method: "POST",
-        body: JSON.stringify(payload)
-      });
-      const data = await response.json();
-      
-      if (data.result === 'success') {
-        setMembers(data.members || []);
-        
-        if (data.pagination) {
-            setTotalPages(data.pagination.totalPages);
-            setTotalItems(data.pagination.totalItems);
-            setCurrentPage(data.pagination.currentPage);
-        } else {
-            setTotalPages(1);
-            setTotalItems(data.members.length);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching members:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Initial Load
   useEffect(() => {
-    if (hasSearched) {
-        fetchMembers(1, initialQuery, initialCat);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setPage(1);
+  }, [debouncedQuery, emailTab]);
+
+  useEffect(() => {
+    let active = true;
+
+    getPublicMemberDirectoryNotice()
+      .then((row) => {
+        if (active) setNotice(row);
+      })
+      .catch(() => {
+        if (active) setNotice(null);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
-  // === 3. HANDLERS ===
-  const handleSearch = () => {
-    setActiveSearch(inputSearch);
-    setActiveCategory(inputCategory);
-    setHasSearched(true);
-    setCurrentPage(1); 
+  useEffect(() => {
+    let active = true;
 
-    const params = {};
-    if (inputSearch) params.m_search = inputSearch;
-    if (inputCategory !== 'All') params.cat = inputCategory;
-    setSearchParams(params);
+    const loadMembers = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const result = await listPublicMemberDirectory({
+          search: debouncedQuery,
+          emailFilter: emailTab,
+          page,
+          pageSize: MEMBER_DIRECTORY_PAGE_SIZE,
+        });
+        if (!active) return;
+        setMembers(result.rows);
+        setTotal(result.count);
+      } catch {
+        if (!active) return;
+        setError('Unable to load member directory right now. Please try again shortly.');
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
 
-    fetchMembers(1, inputSearch, inputCategory);
-  };
+    loadMembers();
+    return () => {
+      active = false;
+    };
+  }, [debouncedQuery, emailTab, page]);
 
-  const handleClear = () => {
-    setInputSearch('');
-    setInputCategory('All');
-    setActiveSearch('');
-    setActiveCategory('All');
-    setHasSearched(false);
-    setSearchParams({});
-    setCurrentPage(1);
-    setMembers([]); 
-  };
+  const totalPages = Math.max(1, Math.ceil(total / MEMBER_DIRECTORY_PAGE_SIZE));
+  const startRow = total ? (page - 1) * MEMBER_DIRECTORY_PAGE_SIZE + 1 : 0;
+  const endRow = Math.min(page * MEMBER_DIRECTORY_PAGE_SIZE, total);
 
-  const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-        setCurrentPage(newPage);
-        fetchMembers(newPage, activeSearch, activeCategory);
-        document.getElementById('results-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
-
-   const getCityState = (address) => {
-    if (!address) return "";
-    const parts = address.split(',').map(p => p.trim()).filter(Boolean);
-    if (parts.length > 1) {
-      return parts.slice(-2).join(', ');
-    }
-    return address;
-  };
-
+  const pageRows = useMemo(() => members.map((member, index) => ({
+    ...member,
+    serialNo: (page - 1) * MEMBER_DIRECTORY_PAGE_SIZE + index + 1,
+  })), [members, page]);
 
   return (
-    <motion.main 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }} 
-      className="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans"
+    <motion.main
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="min-h-screen bg-gray-50"
     >
-      <SEO 
-        title="Member Directory" 
-        description="Search and view the directory of SGIHPBP members."
-        keywords="SGIHPBP members, pathology directory, medical professionals list"
+      <SEO
+        title="Member Directory"
+        description="Search and view the member directory of SGIHPBP."
+        keywords="SGIHPBP members, member directory, pathology members Delhi"
       />
-      {/* === HERO === */}
-      <section className="bg-primary text-white pt-16 pb-12 relative overflow-hidden">
-        <div className="container mx-auto px-4 text-center relative z-10">
-          <h1 className="text-3xl md:text-4xl font-bold font-display mb-2">Member Directory</h1>
-          <p className="opacity-90 max-w-xl mx-auto text-sm md:text-base">
-            Search the official registry of the Society of Gastrointestinal & Hepato-Pancreatobiliary Pathologist's of India.
+
+      <section className="bg-primary pt-16 pb-12 text-white">
+        <div className="container mx-auto px-4 text-center">
+          <h1 className="mb-2 font-display text-3xl font-bold md:text-4xl">Member Directory</h1>
+          <p className="mx-auto max-w-3xl text-sm opacity-90 md:text-base">
+            Search verified SGIHPBP member records by name, email, phone, hospital or registration number.
           </p>
         </div>
       </section>
 
-      <section className="container mx-auto px-4 py-8 -mt-8 relative z-20">
-        
-        {/* === SEARCH PANEL === */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 p-6 md:p-8 mb-8">
-           <div className="grid md:grid-cols-12 gap-4 items-end">
-             
-             {/* Search Input */}
-             <div className="md:col-span-6 lg:col-span-7">
-               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">Search Keywords</label>
-               <div className="relative group">
-                 <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors">search</span>
-                 <input 
-                   type="text" 
-                   // placeholder="Name, Membership ID, Email, or Mobile..." 
-                   placeholder="Name, Membership ID, or Email..." 
-                   value={inputSearch} 
-                   onChange={(e) => setInputSearch(e.target.value)}
-                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                   className="w-full h-[56px] pl-12 pr-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all font-medium text-gray-700 dark:text-white"
-                 />
-                 {inputSearch && (
-                   <button onClick={() => setInputSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500">
-                     <span className="material-symbols-outlined text-sm">cancel</span>
-                   </button>
-                 )}
-               </div>
-             </div>
+      <section className="container relative z-10 mx-auto -mt-8 px-4 py-8">
+        <div className="mb-8 rounded-xl border border-gray-100 bg-white p-6 shadow-xl md:p-8">
+          <div className="grid items-end gap-4 md:grid-cols-12">
+            <div className="md:col-span-8">
+              <label className="ml-1 mb-2 block text-xs font-bold uppercase text-gray-500">
+                Search by name, email, phone, hospital, or registration number
+              </label>
+              <input
+                type="text"
+                placeholder="Type name, email, phone, hospital, or registration number"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                className="h-[56px] w-full rounded-lg border border-gray-300 bg-gray-50 px-4 font-medium text-gray-700 outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary"
+              />
+            </div>
 
-             {/* MUI Select Dropdown */}
-             <div className="md:col-span-4 lg:col-span-3">
-               <FormControl fullWidth variant="outlined" className="bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                 <InputLabel id="category-select-label" className="dark:text-gray-400">Membership Category</InputLabel>
-                 <Select
-                   labelId="category-select-label"
-                   id="category-select"
-                   value={inputCategory}
-                   onChange={(e) => setInputCategory(e.target.value)}
-                   label="Membership Category"
-                   className="dark:text-white h-[56px]"
-                 >
-                   {categories.map((cat) => (
-                     <MenuItem key={cat} value={cat}>
-                       {cat}
-                     </MenuItem>
-                   ))}
-                 </Select>
-               </FormControl>
-             </div>
+            <div className="md:col-span-4">
+              <p className="ml-1 mb-2 block text-xs font-bold uppercase text-gray-500">Email Tab</p>
+              <div className="grid grid-cols-3 gap-2">
+                {EMAIL_TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setEmailTab(tab.id)}
+                    className={`h-[56px] rounded-lg border text-xs font-bold transition-colors ${
+                      emailTab === tab.id
+                        ? 'border-primary bg-primary text-white'
+                        : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
 
-             {/* Search Button */}
-             <div className="md:col-span-2 lg:col-span-2">
-               <button 
-                 onClick={handleSearch}
-                 className="w-full h-[56px] bg-primary text-white font-bold rounded-lg shadow-md hover:bg-blue-900 active:scale-95 transition-all flex items-center justify-center gap-2"
-               >
-                 Search
-               </button>
-             </div>
-           </div>
-           
-           {/* Active Filter Status */}
-           {hasSearched && (
-             <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 dark:border-gray-700 pt-4">
-               <div className="text-sm text-gray-600 dark:text-gray-300">
-                 Results for <span className="font-bold text-primary dark:text-white">"{activeSearch || 'All'}"</span> in <span className="font-bold text-primary dark:text-white">{activeCategory}</span>
-               </div>
-               <button onClick={handleClear} className="text-sm text-red-500 hover:text-red-700 font-semibold flex items-center gap-1">
-                 <span className="material-symbols-outlined text-sm">restart_alt</span> Reset Filters
-               </button>
-             </div>
-           )}
+          <div className="mt-4 flex flex-col gap-2 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
+            <p>
+              Showing <span className="font-bold text-primary">{startRow}-{endRow}</span> of {total} members
+            </p>
+            {debouncedQuery && <p className="font-semibold text-gray-500">Search: {debouncedQuery}</p>}
+          </div>
         </div>
 
-        {/* === RESULTS SECTION === */}
-        <AnimatePresence mode='wait'>
-          {!hasSearched ? (
-            // EMPTY STATE
-            <motion.div 
-              key="empty"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="text-center py-24 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 opacity-75"
-            >
-              <div className="w-20 h-20 bg-gray-50 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="material-symbols-outlined text-4xl text-gray-400">person_search</span>
-              </div>
-              <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Search Directory</h3>
-              <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto text-sm">
-                Use the search box above to find members by name, ID, or email.
-              </p>
-            </motion.div>
-          ) : (
-            // DATA CONTAINER
-            <motion.div 
-              key="results"
-              id="results-table"
-              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
-            >
-              <div className="bg-gray-50 dark:bg-gray-700/30 px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                <h3 className="font-bold text-gray-700 dark:text-white flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary">list_alt</span> Search Results
-                </h3>
-                <span className="text-xs font-bold bg-primary/10 text-primary px-3 py-1 rounded-full">
-                  {loading ? 'Processing...' : `${totalItems} Members`}
-                </span>
-              </div>
+        {notice && <MemberDirectoryNotice notice={notice} />}
 
-              {/* MOBILE CARD VIEW */}
-              <div className="md:hidden">
-                {loading ? (
-                  <div className="p-4 space-y-4">
-                    {[1,2,3].map(i => (
-                      <div key={i} className="animate-pulse bg-gray-50 dark:bg-gray-700 p-4 rounded-lg h-40"></div>
-                    ))}
-                  </div>
-                ) : members.length > 0 ? (
-                  <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                    {members.map((member, i) => (
-                      <div key={i} className="p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                        
-                        {/* 1. Header: Name, ID, Category */}
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h4 className="font-bold text-gray-900 dark:text-white text-lg leading-tight">{member.name}</h4>
-                            <span className="text-xs font-mono text-gray-500 bg-gray-100 dark:bg-gray-600 px-1.5 py-0.5 rounded mt-1 inline-block">
-                              {member.memberId}
-                            </span>
-                          </div>
-                          <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${
-                            (member.category || "").includes('Life')
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800'
-                            : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800'
-                          }`}>
-                             {member.category}
-                          </span>
-                        </div>
-                        
-                        {/* 2. Details in a Single Grid */}
-                        <div className="grid grid-cols-2 gap-x-1 gap-y-1 mt-4 text-sm text-gray-600 dark:text-gray-300">
-                           
-                           {/* Row 1, Col 1 */}
-                           <div className="flex items-start gap-2 min-w-0">
-                               <span className="material-symbols-outlined text-[18px] text-gray-400 mt-0.5 flex-shrink-0">school</span>
-                               <span className="font-medium break-words">{member.qualification || 'N/A'}</span>
-                           </div>
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+          <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-6 py-4">
+            <h3 className="font-bold text-gray-700">Directory Records</h3>
+            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
+              {loading ? 'Loading...' : `${total} Rows`}
+            </span>
+          </div>
 
-                           {/* Row 1, Col 2 */}
-                           <div className="flex items-start gap-2 min-w-0">
-                                {member.email ? (
-                                  <a href={`mailto:${member.email.trim()}`} className="flex items-start gap-2 group min-w-0">
-                                     <span className="material-symbols-outlined text-[18px] text-gray-400 mt-0.5 flex-shrink-0 group-hover:text-primary transition-colors">mail</span>
-                                     <span className="text-primary group-hover:underline break-all leading-tight">{member.email}</span>
-                                  </a>
-                                ) : (
-                                  <div className="flex items-start gap-2">
-                                     <span className="material-symbols-outlined text-[18px] text-gray-400 mt-0.5 flex-shrink-0">mail</span>
-                                     <span>-</span>
-                                  </div>
-                                )}
-                           </div>
-
-                           {/* Row 2, Col 1 */}
-                           {/* <div className="flex items-start gap-2 min-w-0">
-                               <span className="material-symbols-outlined text-[18px] text-gray-400 mt-0.5 flex-shrink-0">location_on</span>
-                               <span className="leading-tight break-words">{getCityState(member.address) || 'Unknown'}</span>
-                           </div> */}
-
-                           {/* Row 2, Col 2 */}
-                           {/* <div className="flex items-start gap-2 min-w-0">
-                                <span className="material-symbols-outlined text-[18px] text-gray-400 mt-0.5 flex-shrink-0">call</span>
-                                {member.phone ? (
-                                  <a href={`tel:${member.phone}`} className="text-gray-700 dark:text-gray-300 hover:text-primary transition-colors">
-                                    {member.phone}
-                                  </a>
-                                ) : <span>-</span>}
-                           </div> */}
-                        </div>
-
-                        {/* 3. Footer: Action Buttons */}
-                        <div className="flex gap-3 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
-                          {member.email && (
-                            <a href={`mailto:${member.email.trim()}`} className="flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold text-primary bg-primary/5 hover:bg-primary/10 rounded transition-colors">
-                              <span className="material-symbols-outlined text-sm">mail</span> Email
-                            </a>
-                          )}
-                          {/* {member.phone && (
-                            <a href={`tel:${member.phone}`} className="flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 rounded transition-colors">
-                              <span className="material-symbols-outlined text-sm">call</span> Call
-                            </a>
-                          )} */}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-8 text-center text-gray-500">No members found.</div>
-                )}
-              </div>
-
-              {/* DESKTOP TABLE VIEW */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full text-sm text-left whitespace-nowrap">
-                  <thead className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase text-xs font-bold tracking-wider">
-                    <tr>
-                      <th className="px-6 py-4 border-b dark:border-gray-600">ID</th>
-                      <th className="px-6 py-4 border-b dark:border-gray-600">Name</th>
-                      <th className="px-6 py-4 border-b dark:border-gray-600">Qualification</th>
-                      {/* <th className="px-6 py-4 border-b dark:border-gray-600">Location</th> */}
-                      <th className="px-6 py-4 border-b dark:border-gray-600">Email</th>
-                      {/* <th className="px-6 py-4 border-b dark:border-gray-600">Phone</th> */}
-                      <th className="px-6 py-4 border-b dark:border-gray-600 text-center">Category</th>
-                    </tr>
-                  </thead>
-
-                  <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                    {loading ? (
-                      Array(5).fill(0).map((_, i) => (
-                        <tr key={i} className="animate-pulse">
-                          <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-12"></div></td>
-                          <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32"></div></td>
-                          <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div></td>
-                          {/* <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div></td> */}
-                          <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32"></div></td>
-                          {/* <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div></td> */}
-                          <td className="px-6 py-4"><div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-16 mx-auto"></div></td>
-                        </tr>
-                      ))
-                    ) : members.length > 0 ? (
-                      members.map((member, i) => (
-                        <tr key={i} className="hover:bg-blue-50/50 dark:hover:bg-gray-700/50 transition-colors">
-                          <td className="px-6 py-4 font-mono text-xs font-bold text-gray-500">
-                            {member.memberId || <span className="text-gray-400">N/A</span>}
-                          </td>
-                          <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">
-                            {member.name || <span className="text-gray-400">N/A</span>}
-                          </td>
-                          <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
-                            {member.qualification || <span className="text-gray-400">N/A</span>}
-                          </td>
-                          {/* <td className="px-6 py-4 text-gray-600 dark:text-gray-300"> */}
-                            {/* <span className="flex items-center gap-1">
-                               <span className="material-symbols-outlined text-[16px] text-gray-400">location_on</span>
-                               {getCityState(member.address) || <span className="text-gray-400">Unknown</span>}
-                            </span> */}
-                          {/* </td> */}
-                          <td className="px-6 py-4">
-                            {member.email ? (
-                               <a href={`mailto:${member.email.trim()}`} className="text-primary hover:underline font-medium">
-                                 {member.email}
-                               </a>
-                            ) : <span className="text-gray-400">-</span>}
-                          </td>
-                          {/* <td className="px-6 py-4 text-gray-600 dark:text-gray-400 font-mono text-xs">
-                             {member.phone || <span className="text-gray-300">-</span>}
-                          </td> */}
-                          <td className="px-6 py-4 text-center">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border ${
-                              (member.category || "").includes('Life')
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800'
-                              : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800'
-                            }`}>
-                               {member.category}
-                            </span>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="5" className="px-6 py-16 text-center text-gray-500">
-                           No members found matching your criteria.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* PAGINATION */}
-              {!loading && members.length > 0 && (
-                <div className="bg-gray-50 dark:bg-gray-700/30 px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="text-xs text-gray-500 font-medium">
-                    Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} of {totalItems}
-                  </div>
-                  
-                  <div className="flex items-center gap-1">
-                    <button 
-                      disabled={currentPage === 1}
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      className="p-1.5 rounded hover:bg-white dark:hover:bg-gray-600 border border-transparent hover:border-gray-200 dark:hover:border-gray-500 disabled:opacity-30 disabled:pointer-events-none"
-                    >
-                      <span className="material-symbols-outlined text-sm">chevron_left</span>
-                    </button>
-                    
-                    {Array.from({length: Math.min(5, totalPages)}, (_, i) => {
-                       let pNum = i + 1;
-                       if (totalPages > 5 && currentPage > 3) pNum = currentPage - 2 + i;
-                       if (totalPages > 5 && currentPage > totalPages - 2) pNum = totalPages - 4 + i;
-                       if (pNum > totalPages || pNum < 1) return null;
-
-                       return (
-                         <button 
-                           key={pNum}
-                           onClick={() => handlePageChange(pNum)}
-                           className={`w-8 h-8 rounded text-xs font-bold transition-all border ${
-                             currentPage === pNum 
-                             ? 'bg-primary text-white border-primary' 
-                             : 'bg-white dark:bg-gray-600 text-gray-600 dark:text-gray-200 border-gray-200 dark:border-gray-500 hover:border-primary'
-                           }`}
-                         >
-                           {pNum}
-                         </button>
-                       )
-                    })}
-                    
-                    <button 
-                      disabled={currentPage === totalPages}
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      className="p-1.5 rounded hover:bg-white dark:hover:bg-gray-600 border border-transparent hover:border-gray-200 dark:hover:border-gray-500 disabled:opacity-30 disabled:pointer-events-none"
-                    >
-                      <span className="material-symbols-outlined text-sm">chevron_right</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </motion.div>
+          {error && (
+            <div className="border-b border-red-200 bg-red-50 p-6 text-sm text-red-600">
+              {error}
+            </div>
           )}
-        </AnimatePresence>
+
+          <div className="hidden overflow-x-auto md:block">
+            <table className="w-full whitespace-nowrap text-left text-sm">
+              <thead className="bg-gray-100 text-xs font-bold uppercase tracking-wider text-gray-600">
+                <tr>
+                  <th className="border-b px-6 py-4">S.No</th>
+                  <th className="border-b px-6 py-4">Member Name</th>
+                  <th className="border-b px-6 py-4">Hospital</th>
+                  <th className="border-b px-6 py-4">Registration Number</th>
+                  <th className="border-b px-6 py-4">Email</th>
+                  <th className="border-b px-6 py-4">Phone</th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-gray-100">
+                {loading ? (
+                  Array.from({ length: 8 }).map((_, index) => (
+                    <tr key={`skeleton-${index}`} className="animate-pulse">
+                      <td className="px-6 py-4"><div className="h-4 w-10 rounded bg-gray-200" /></td>
+                      <td className="px-6 py-4"><div className="h-4 w-40 rounded bg-gray-200" /></td>
+                      <td className="px-6 py-4"><div className="h-4 w-36 rounded bg-gray-200" /></td>
+                      <td className="px-6 py-4"><div className="h-4 w-28 rounded bg-gray-200" /></td>
+                      <td className="px-6 py-4"><div className="h-4 w-36 rounded bg-gray-200" /></td>
+                      <td className="px-6 py-4"><div className="h-4 w-24 rounded bg-gray-200" /></td>
+                    </tr>
+                  ))
+                ) : pageRows.length > 0 ? (
+                  pageRows.map((member) => (
+                    <tr key={member.id} className="transition-colors hover:bg-blue-50/50">
+                      <td className="px-6 py-4 text-gray-600">{member.serialNo}</td>
+                      <td className="px-6 py-4 font-semibold text-gray-800">{member.member_name}</td>
+                      <td className="px-6 py-4 text-gray-700">{member.hospital || '-'}</td>
+                      <td className="px-6 py-4 font-mono text-gray-700">{member.registration_number}</td>
+                      <td className="px-6 py-4 font-mono text-gray-700">{member.masked_email || '-'}</td>
+                      <td className="px-6 py-4 font-mono text-gray-700">{member.masked_mobile || '-'}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                      No matching members found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="divide-y divide-gray-100 md:hidden">
+            {loading ? (
+              Array.from({ length: 4 }).map((_, index) => (
+                <div key={`mobile-skeleton-${index}`} className="animate-pulse p-5">
+                  <div className="mb-3 h-4 w-24 rounded bg-gray-200" />
+                  <div className="mb-3 h-5 w-48 rounded bg-gray-200" />
+                  <div className="h-4 w-36 rounded bg-gray-200" />
+                </div>
+              ))
+            ) : pageRows.length > 0 ? (
+              pageRows.map((member) => (
+                <div key={`mobile-${member.id}`} className="p-5">
+                  <p className="mb-1 font-mono text-xs text-gray-500">{member.registration_number}</p>
+                  <h4 className="text-lg font-bold text-gray-900">{member.member_name}</h4>
+                  <p className="mt-1 text-sm text-gray-600">Hospital: {member.hospital || '-'}</p>
+                  <div className="mt-3 grid gap-1 rounded-lg bg-gray-50 p-3 text-xs font-semibold text-gray-600">
+                    <p>Email: <span className="font-mono text-gray-800">{member.masked_email || '-'}</span></p>
+                    <p>Phone: <span className="font-mono text-gray-800">{member.masked_mobile || '-'}</span></p>
+                  </div>
+                  {member.membership_status && (
+                    <p className="mt-2 inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
+                      {member.membership_status}
+                    </p>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="p-8 text-center text-gray-500">No matching members found.</div>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-3 border-t border-gray-100 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm font-semibold text-gray-500">Page {page} of {totalPages}</p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPage((current) => Math.max(current - 1, 1))}
+                disabled={page <= 1 || loading}
+                className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-bold text-primary hover:bg-gray-50 disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                onClick={() => setPage((current) => Math.min(current + 1, totalPages))}
+                disabled={page >= totalPages || loading}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white hover:bg-blue-900 disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
       </section>
     </motion.main>
   );
 };
+
+function MemberDirectoryNotice({ notice }) {
+  const linkUrl = notice.link_url || '';
+  const isExternal = /^https?:\/\//i.test(linkUrl) || /^mailto:/i.test(linkUrl);
+
+  return (
+    <div className="mb-8 overflow-hidden rounded-xl border border-gold-DEFAULT/30 bg-primary text-white shadow-lg">
+      <div className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between md:px-7">
+        <div className="min-w-0">
+          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-gold-light">
+            <span className="material-symbols-outlined text-lg">campaign</span>
+            Member Directory Notice
+          </p>
+          <h2 className="mt-2 text-lg font-bold md:text-xl">{notice.title}</h2>
+          <p className="mt-1 text-sm leading-6 text-white/85">{notice.message}</p>
+        </div>
+
+        {notice.link_label && linkUrl && (
+          <a
+            href={linkUrl}
+            target={isExternal ? '_blank' : undefined}
+            rel={isExternal ? 'noopener noreferrer' : undefined}
+            className="inline-flex shrink-0 items-center justify-center rounded-lg bg-gold-DEFAULT px-4 py-2 text-sm font-bold text-primary hover:bg-yellow-500"
+          >
+            {notice.link_label}
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function useDebouncedValue(value, delay) {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    const handle = window.setTimeout(() => setDebounced(value), delay);
+    return () => window.clearTimeout(handle);
+  }, [delay, value]);
+
+  return debounced;
+}
 
 export default MembersDetails;

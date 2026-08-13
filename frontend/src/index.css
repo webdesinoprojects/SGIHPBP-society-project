@@ -72,3 +72,17 @@
 .hover\:pause:hover {
   animation-play-state: paused !important;
 }
+
+.safe-wrap {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Hide scrollbar for forms that have max-height and overflow-auto */
+.custom-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.custom-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

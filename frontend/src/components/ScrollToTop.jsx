@@ -2,16 +2,13 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
 const ScrollToTop = () => {
-  // Get the current route's pathname
   const { pathname } = useLocation();
 
-  // This effect runs every time the pathname changes
   useEffect(() => {
-    // Scroll the window to the top left corner (0, 0)
+    if (pathname.startsWith('/admin')) return;
     window.scrollTo(0, 0);
-  }, [pathname]); // Dependency array ensures this runs on navigation
+  }, [pathname]);
 
-  // This component doesn't render any visible UI
   return null;
 };
 

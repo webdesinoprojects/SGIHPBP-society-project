@@ -22,4 +22,22 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+!.env.example
+
+# Local/source docs used for content prep, not runtime assets
+src/docs/
+
+# Temporary extraction files
+tmp_*
+config.bat
 .env
+.env-share
+supabase/.temp
+
+# Local member data (PII) - never commit
+data/
+
+# Dev-internal, kept local only - not for the published repo
+.claude/
+dev/
+scripts/

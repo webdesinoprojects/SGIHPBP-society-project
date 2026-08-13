@@ -1,25 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { listTickerUpdates } from '../../lib/ticker';
 
 const EventTicker = () => {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // YOUR SCRIPT URL
-    const GOOGLE_SCRIPT_URL = import.meta.env.VITE_API_URL;
-
     useEffect(() => {
         const fetchEvents = async () => {
             try {
-                const response = await fetch(GOOGLE_SCRIPT_URL, {
-                    method: "POST",
-                    body: JSON.stringify({ action: "get_events" })
-                });
-                const data = await response.json();
-                if (data.result === 'success' && Array.isArray(data.data)) {
-                    setEvents(data.data);
-                }
+                const updates = await listTickerUpdates();
+                setEvents(updates);
             } catch (error) {
                 console.error("Error fetching ticker events:", error);
             } finally {
@@ -68,32 +60,50 @@ const EventTicker = () => {
                         whileHover={{ animationPlayState: 'paused' }}
                         style={{ width: "fit-content" }}
                     >
-                        {duplicatedEvents.map((event, index) => (
-                            <Link
-                                key={`${event.title}-${index}`}
-                                to="/academics-events"
-                                className="flex items-center gap-3 group hover:opacity-100 opacity-90 transition-opacity"
-                            >
-                                <span className="w-3 h-3 rounded-full bg-[#D4AF37] animate-pulse"></span>
-
-                                <span className="font-bold text-lg md:text-xl group-hover:text-gold-light transition-colors text-gray-200">
-                                    {event.title}
-                                </span>
-
-                                {event.date && (
-                                    <span className="text-sm bg-white/10 px-3 py-1 rounded text-gray-200 group-hover:bg-white/20 border border-white/10">
-                                        {event.date}
+                        {duplicatedEvents.map((event, index) => {
+                            const linkHref = event.link_url || "/academics-events";
+                            const isExternal = !linkHref.startsWith('/');
+                            
+                            const innerContent = (
+                                <>
+                                    <span className="w-3 h-3 rounded-full bg-[#D4AF37] animate-pulse"></span>
+                                    <span className="font-bold text-lg md:text-xl group-hover:text-gold-light transition-colors text-gray-200">
+                                        {event.title}
                                     </span>
-                                )}
+                                    {event.date && (
+                                        <span className="text-sm bg-white/10 px-3 py-1 rounded text-gray-200 group-hover:bg-white/20 border border-white/10">
+                                            {event.date}
+                                        </span>
+                                    )}
+                                    {event.location && (
+                                        <span className="text-sm md:text-base text-gray-300 flex items-center">
+                                            <span className="material-symbols-outlined text-[18px] mr-1 text-[#D4AF37]">location_on</span>
+                                            {event.location}
+                                        </span>
+                                    )}
+                                </>
+                            );
 
-                                {event.location && (
-                                    <span className="text-sm md:text-base text-gray-300 flex items-center">
-                                        <span className="material-symbols-outlined text-[18px] mr-1 text-[#D4AF37]">location_on</span>
-                                        {event.location}
-                                    </span>
-                                )}
-                            </Link>
-                        ))}
+                            return isExternal ? (
+                                <a
+                                    key={`${event.title}-${index}`}
+                                    href={linkHref}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-3 group hover:opacity-100 opacity-90 transition-opacity"
+                                >
+                                    {innerContent}
+                                </a>
+                            ) : (
+                                <Link
+                                    key={`${event.title}-${index}`}
+                                    to={linkHref}
+                                    className="flex items-center gap-3 group hover:opacity-100 opacity-90 transition-opacity"
+                                >
+                                    {innerContent}
+                                </Link>
+                            );
+                        })}
                     </motion.div>
                 </div>
 
