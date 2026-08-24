@@ -47,6 +47,7 @@ import AdminMemberDirectoryNotice from './pages/admin/AdminMemberDirectoryNotice
 import AdminMessages from './pages/admin/AdminMessages';
 import AdminMessageDetail from './pages/admin/AdminMessageDetail';
 import AdminTickerUpdates from './pages/admin/AdminTickerUpdates';
+import AdminHomeNotices from './pages/admin/AdminHomeNotices';
 import AdminVoters from './pages/admin/AdminVoters';
 import AdminVoterDetail from './pages/admin/AdminVoterDetail';
 import EventDetail from './pages/EventDetail';
@@ -281,6 +282,14 @@ function App() {
             element={(
               <ProtectedRoute requireAdmin>
                 <AdminTickerUpdates />
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="/admin/home-notices"
+            element={(
+              <ProtectedRoute requireAdmin>
+                <AdminHomeNotices />
               </ProtectedRoute>
             )}
           />

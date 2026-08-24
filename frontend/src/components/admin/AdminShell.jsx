@@ -28,6 +28,7 @@ const navGroups = [
       { label: 'Voter Details', to: '/admin/voters', icon: 'how_to_reg' },
       { label: 'Events', to: '/admin/events', icon: 'event' },
       { label: 'Latest Updates', to: '/admin/ticker-updates', icon: 'campaign' },
+      { label: 'Homepage Notices', to: '/admin/home-notices', icon: 'notifications_active' },
       { label: 'Cases', to: '/admin/cases', icon: 'biotech' },
       { label: 'Publications', to: '/admin/publications', icon: 'article' },
       { label: 'Governing Body', to: '/admin/governing-body', icon: 'badge' },
