@@ -344,7 +344,8 @@ export async function sendMembershipDocuments(id) {
 }
 
 export async function createSignedMembershipUrl(path, expiresIn = 300) {
-  if (!path) return '';
+  if (!path || path.startsWith('legacy-import/')) return '';
+  if (/^https?:\/\//i.test(path)) return path;
   const { data, error } = await supabase.storage
     .from(MEMBERSHIP_BUCKET)
     .createSignedUrl(path, expiresIn);

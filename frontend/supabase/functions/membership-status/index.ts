@@ -54,6 +54,8 @@ function serviceClient() {
 }
 
 async function signedPath(supabase: ReturnType<typeof createClient>, path: string) {
+  if (/^https?:\/\//i.test(path)) return path;
+  if (path.startsWith('legacy-import/')) return '';
   const { data, error } = await supabase.storage
     .from('membership-assets')
     .createSignedUrl(path, 60 * 10);
