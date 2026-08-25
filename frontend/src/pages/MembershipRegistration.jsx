@@ -1,42 +1,62 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import SEO from '../components/SEO';
-import PaymentQR from '../assets/qrcode.jpg';
 import MarkdownBlock from '../components/common/MarkdownBlock';
-import { loadMembershipPortalData, fallbackPortalSettings } from '../lib/membershipConfig';
+import PaymentQR from '../images/qr.png';
+import { logDevError } from '../lib/logger';
+import {
+  lookupMembershipStatus,
+  membershipStatusLabels,
+  submitMembershipApplication,
+} from '../lib/membership';
+import {
+  fallbackMembershipCategories,
+  fallbackMembershipPlans,
+  fallbackPortalSettings,
+  getMembershipPortalAssetUrl,
+  loadMembershipPortalData,
+} from '../lib/membershipConfig';
 
-const MembershipRegistration = () => {
-  // State to toggle between Registration and Status Check
-  const [activeTab, setActiveTab] = useState('register'); // 'register' or 'status'
-  
-  // --- STATE: SETTINGS ---
-  const [settings, setSettings] = useState(fallbackPortalSettings);
-  const [loadingSettings, setLoadingSettings] = useState(true);
+const defaultFormData = (plans = fallbackMembershipPlans, categories = fallbackMembershipCategories) => {
+  const plan = plans[0] || fallbackMembershipPlans[0];
+  const category = categories[0] || fallbackMembershipCategories[0];
 
-  useEffect(() => {
-    loadMembershipPortalData().then((data) => {
-      setSettings(data.settings);
-      setLoadingSettings(false);
-    });
-  }, []);
-
-  // --- STATE: NEW REGISTRATION ---
-  const [formData, setFormData] = useState({
+  return {
     Name: '',
     Institution: '',
-    Qualification: '', 
+    Qualification: '',
     Practicing: 'Yes',
     StudentStatus: '',
     Address: '',
     Email: '',
     Phone: '',
-    MembershipType: 'Life Membership',
-    Amount: '10,000 INR',
+    MembershipType: plan.value,
+    Amount: plan.amountLabel,
     TransactionDetails: '',
-    Interest: 'I am a gastrointestinal & hepatopancreatobiliary pathologist',
-    photo: null
-  });
+    Interest: category.value || category.label,
+    photo: null,
+    paymentProof: null,
+  };
+};
+
+const findPlan = (plans, value) => (
+  plans.find((plan) => plan.value === value || plan.slug === value) || plans[0] || fallbackMembershipPlans[0]
+);
+
+const MembershipRegistration = () => {
+  const [searchParams] = useSearchParams();
+  // State to toggle between Registration and Status Check
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') === 'status' ? 'status' : 'register'); // 'register' or 'status'
+
+  // --- STATE: NEW REGISTRATION ---
+  const [settings, setSettings] = useState(fallbackPortalSettings);
+  const [planOptions, setPlanOptions] = useState(fallbackMembershipPlans);
+  const [categoryOptions, setCategoryOptions] = useState(fallbackMembershipCategories);
+  const [paymentQrUrl, setPaymentQrUrl] = useState(PaymentQR);
+  const [formData, setFormData] = useState(defaultFormData());
   const [regStatus, setRegStatus] = useState(null); // null, 'submitting', 'success', 'error'
+  const [regError, setRegError] = useState('');
   const [errors, setErrors] = useState({}); // State for Validation Errors
 
   // --- STATE: CHECK STATUS ---
@@ -44,45 +64,94 @@ const MembershipRegistration = () => {
   const [statusResult, setStatusResult] = useState(null); // null, 'loading', 'found', 'not_found', 'error'
   const [memberData, setMemberData] = useState(null);
 
-  // Your Google Script URL
-  const GOOGLE_SCRIPT_URL = import.meta.env.VITE_API_URL;
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadPortalConfig() {
+      try {
+        const data = await loadMembershipPortalData();
+        if (!mounted) return;
+
+        const nextPlans = data.plans.length ? data.plans : fallbackMembershipPlans;
+        const nextCategories = data.categories.length ? data.categories : fallbackMembershipCategories;
+
+        setSettings(data.settings);
+        setPlanOptions(nextPlans);
+        setCategoryOptions(nextCategories);
+        setFormData((current) => {
+          const selectedPlan = findPlan(nextPlans, current.MembershipType);
+          const selectedCategory = nextCategories.find((category) => category.value === current.Interest || category.label === current.Interest)
+            || nextCategories[0]
+            || fallbackMembershipCategories[0];
+
+          return {
+            ...current,
+            MembershipType: selectedPlan.value,
+            Amount: selectedPlan.amountLabel,
+            Interest: selectedCategory.value || selectedCategory.label,
+          };
+        });
+
+        if (data.settings.qr_image_path) {
+          try {
+            const url = await getMembershipPortalAssetUrl(data.settings.qr_image_path, 3600);
+            if (mounted) setPaymentQrUrl(url || PaymentQR);
+          } catch (error) {
+            logDevError('Membership QR image could not be loaded:', error);
+            if (mounted) setPaymentQrUrl(PaymentQR);
+          }
+        } else {
+          setPaymentQrUrl(PaymentQR);
+        }
+      } catch (error) {
+        logDevError('Membership portal config load failed:', error);
+      }
+    }
+
+    loadPortalConfig();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // --- HANDLERS: REGISTRATION ---
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const nextValue = e.target.value;
+    const nextData = { ...formData, [e.target.name]: nextValue };
+    if (e.target.name === 'MembershipType') {
+      nextData.Amount = findPlan(planOptions, nextValue).amountLabel;
+    }
+    setFormData(nextData);
     // Clear error when user starts typing
     if (errors[e.target.name]) {
       setErrors({ ...errors, [e.target.name]: null });
     }
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = (e, field = 'photo') => {
     const file = e.target.files[0];
     if (file) {
-      // Validate file size (1MB limit)
-      if (file.size > 1024 * 1024) {
-        setErrors({ ...errors, photo: "File size must be less than 1MB" });
+      const isPhoto = field === 'photo';
+      const maxSize = isPhoto ? 1024 * 1024 : 5 * 1024 * 1024;
+      const validTypes = isPhoto
+        ? ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+        : ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
+
+      if (file.size > maxSize) {
+        setErrors({ ...errors, [field]: isPhoto ? 'File size must be less than 1MB' : 'Payment proof must be less than 5MB' });
         e.target.value = ''; // Clear the input
         return;
       }
       
-      // Validate file type - only images
-      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
       if (!validTypes.includes(file.type)) {
-        setErrors({ ...errors, photo: "Only image files (JPG, PNG, GIF) are allowed" });
+        setErrors({ ...errors, [field]: isPhoto ? 'Only image files (JPG, PNG, GIF, WebP) are allowed' : 'Upload JPG, PNG, WebP or PDF payment proof' });
         e.target.value = ''; // Clear the input
         return;
       }
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData({ ...formData, photo: { data: reader.result, type: file.type } });
-        if (errors.photo) setErrors({ ...errors, photo: null });
-      };
-      reader.onerror = () => {
-        setErrors({ ...errors, photo: "Error reading file. Please try again." });
-      };
-      reader.readAsDataURL(file);
+
+      setFormData((current) => ({ ...current, [field]: file }));
+      if (errors[field]) setErrors({ ...errors, [field]: null });
     }
   };
 
@@ -172,6 +241,11 @@ const MembershipRegistration = () => {
       isValid = false;
     }
 
+    if (!formData.paymentProof) {
+      tempErrors.paymentProof = "Payment proof screenshot or PDF is required";
+      isValid = false;
+    }
+
     setErrors(tempErrors);
     return isValid;
   };
@@ -185,22 +259,33 @@ const MembershipRegistration = () => {
     }
 
     setRegStatus('submitting');
+    setRegError('');
 
     try {
-      await fetch(GOOGLE_SCRIPT_URL, {
-        method: "POST",
-        body: JSON.stringify(formData),
+      const result = await submitMembershipApplication({
+        applicant_name: formData.Name,
+        institution: formData.Institution,
+        qualification: formData.Qualification,
+        practicing_pathologist: formData.Practicing,
+        student_status: formData.StudentStatus,
+        address: formData.Address,
+        email: formData.Email,
+        phone: formData.Phone,
+        membership_type: formData.MembershipType,
+        transaction_details: formData.TransactionDetails,
+        interest_category: formData.Interest,
+        photoFile: formData.photo,
+        paymentProofFile: formData.paymentProof,
       });
+      if (!result.ok) throw new Error(result.message);
       setRegStatus('success');
-      setFormData({
-         Name: '', Institution: '', Qualification: '', Practicing: 'Yes', StudentStatus: '', 
-         Address: '', Email: '', Phone: '', MembershipType: 'Life Membership', 
-         Amount: '10,000 INR', TransactionDetails: '', Interest: 'I am a gastrointestinal & hepatopancreatobiliary pathologist', photo: null
-      });
+      setRegError('');
+      setFormData(defaultFormData(planOptions, categoryOptions));
       setErrors({});
     } catch (error) {
-      console.error("Error:", error);
+      logDevError("Membership application submit failed:", error);
       setRegStatus('error');
+      setRegError(error.message || 'Application could not be submitted. Please try again.');
     }
   };
 
@@ -219,21 +304,16 @@ const MembershipRegistration = () => {
     setStatusResult('loading');
     
     try {
-      const response = await fetch(GOOGLE_SCRIPT_URL, {
-        method: "POST",
-        body: JSON.stringify({ action: "check_status", email: checkEmail })
-      });
+      const data = await lookupMembershipStatus(checkEmail);
       
-      const data = await response.json();
-      
-      if (data.result === 'found') {
-        setMemberData(data);
+      if (data?.result === 'found') {
+        setMemberData(data.application);
         setStatusResult('found');
       } else {
         setStatusResult('not_found');
       }
     } catch (error) {
-      console.error("Check Status Error:", error);
+      logDevError("Membership status check failed:", error);
       setStatusResult('error');
     }
   };
@@ -245,15 +325,15 @@ const MembershipRegistration = () => {
     >
       <SEO 
         title="Join Membership" 
-        description="Register for SGIHPBP membership. Apply for Life, Associate, or Ad Hoc membership."
-        keywords="join SGIHPBP, membership registration, pathology society application"
+        description="Register for SGIHPBP membership. Apply for Life, Associate Life, or Ad Hoc membership."
+        keywords="join SGIHPBP, membership registration, gastrointestinal pathology society application"
       />
       <div className="max-w-6xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-2xl overflow-hidden">
         
         {/* Header with Tabs */}
         <div className="bg-primary text-white p-8 text-center">
-          <h1 className="text-3xl font-bold font-display">Membership Portal</h1>
-          <p className="mt-2 opacity-90 mb-6">Join the Society or Manage your Membership</p>
+          <h1 className="text-3xl font-bold font-display">{settings.portal_title}</h1>
+          <p className="mt-2 opacity-90 mb-6">{settings.portal_subtitle}</p>
           
           <div className="flex flex-wrap justify-center gap-4">
             <button 
@@ -277,11 +357,11 @@ const MembershipRegistration = () => {
               Check Status / Download
             </button>
             {settings.promo_enabled && (
-              <button 
-                onClick={() => setActiveTab('promotional')}
+              <button
+                onClick={() => setActiveTab('promo')}
                 className={`px-6 py-2 rounded-full font-bold transition-all ${
-                  activeTab === 'promotional' 
-                  ? 'bg-white text-primary shadow-lg' 
+                  activeTab === 'promo'
+                  ? 'bg-white text-primary shadow-lg'
                   : 'bg-primary-dark text-white/70 border border-white/30 hover:bg-primary-light'
                 }`}
               >
@@ -298,32 +378,25 @@ const MembershipRegistration = () => {
             <div className="lg:col-span-1 p-8 bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600">
               <h3 className="text-xl font-bold text-primary dark:text-white mb-6 flex items-center">
                 <span className="material-symbols-outlined mr-2">payments</span>
-                Payment Information
+                {settings.payment_title}
               </h3>
               
               <div className="space-y-6 text-sm text-gray-700 dark:text-gray-300">
                 <div className="bg-white dark:bg-gray-600 p-5 rounded-lg shadow-sm border border-gray-200 dark:border-gray-500">
-                  <h4 className="font-bold text-lg mb-3 text-primary dark:text-white border-b pb-2">Bank Transfer</h4>
-                  <div className="space-y-2">
-                      <p><strong>Account Name:</strong> Society of Gastrointestinal & Hepato-Pancreatobiliary Pathologist's</p>
-                      <p><strong>Bank:</strong> Bank of Baroda</p>
-                      <p><strong>Account No:</strong> 26020100024967</p>
-                      <p><strong>IFSC Code:</strong> BARB0RAMDEL <br/><span className="text-xs text-red-500">(5th character is Zero)</span></p>
-                      <p><strong>Branch:</strong> Dr. RML Hospital, New Delhi</p>
-                  </div>
+                  <MarkdownBlock content={settings.payment_markdown} />
                 </div>
 
                 <div className="bg-white dark:bg-gray-600 p-5 rounded-lg shadow-sm border border-gray-200 dark:border-gray-500 text-center">
                   <h4 className="font-bold text-lg mb-3 text-primary dark:text-white border-b pb-2 text-left">Scan QR to Pay</h4>
-                  <a href={PaymentQR} target="_blank" rel="noopener noreferrer" className="w-full block">
+                  <a href={paymentQrUrl} target="_blank" rel="noopener noreferrer" className="w-full block">
                     <img 
-                      src={PaymentQR} 
+                      src={paymentQrUrl}
                       alt="Payment QR Code" 
                       className="w-full h-auto mx-auto object-contain border rounded-lg mb-2"
-                      onError={(e) => {e.target.style.display='none'; e.target.parentNode.innerHTML+='<p class="text-red-500 text-xs">QR Code image not found</p>'}}
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
                     />
                   </a>
-                  <p className="text-xs text-gray-500 dark:text-gray-300">Accepts UPI, GPay, Paytm</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-300">{settings.qr_caption}</p>
                 </div>
               </div>
             </div>
@@ -334,9 +407,7 @@ const MembershipRegistration = () => {
                 <div className="text-center py-12">
                   <span className="material-symbols-outlined text-6xl text-green-500 mb-4">check_circle</span>
                   <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Application Submitted!</h3>
-                  <p className="text-gray-600 dark:text-gray-300">
-                    We have received your details. You can check your status in the "Check Status" tab.
-                  </p>
+                  <MarkdownBlock content={settings.registration_success_markdown} className="text-center text-gray-600 dark:text-gray-300" />
                   <button onClick={() => setRegStatus(null)} className="mt-6 text-primary font-bold hover:underline">
                     Submit another response
                   </button>
@@ -361,8 +432,8 @@ const MembershipRegistration = () => {
                            <label className="form-label">Passport Photo (Max 1MB) <span className="text-red-500">*</span></label>
                            <input 
                              type="file" 
-                             accept="image/jpeg,image/jpg,image/png,image/gif" 
-                             onChange={handleFileChange} 
+                             accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                             onChange={(event) => handleFileChange(event, 'photo')}
                              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                            />
                            {errors.photo && <p className="text-red-500 text-xs mt-1">{errors.photo}</p>}
@@ -469,18 +540,14 @@ const MembershipRegistration = () => {
                           <div>
                               <label className="form-label">Membership Type <span className="text-red-500">*</span></label>
                               <select name="MembershipType" value={formData.MembershipType} onChange={handleChange} className="form-input">
-                                  <option>Life Membership</option>
-                                  <option>Ad Hoc Membership (For 3 years)</option>
-                                  <option>Associate Life Membership</option>
+                                  {planOptions.map((plan) => (
+                                    <option key={plan.value} value={plan.value}>{plan.label}</option>
+                                  ))}
                               </select>
                           </div>
                           <div>
                               <label className="form-label">Amount Paid <span className="text-red-500">*</span></label>
-                              <select name="Amount" value={formData.Amount} onChange={handleChange} className="form-input">
-                                  <option>10,000 INR</option>
-                                  <option>2,500 INR</option>
-                                  <option>300 USD</option>
-                              </select>
+                              <input name="Amount" value={formData.Amount} readOnly className="form-input bg-gray-100 font-bold" />
                           </div>
                       </div>
                       <div>
@@ -496,19 +563,28 @@ const MembershipRegistration = () => {
                           />
                           {errors.TransactionDetails && <p className="text-red-500 text-xs mt-1">{errors.TransactionDetails}</p>}
                       </div>
+                      <div>
+                          <label className="form-label">Payment Screenshot / Proof <span className="text-red-500">*</span></label>
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                            onChange={(event) => handleFileChange(event, 'paymentProof')}
+                            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                          />
+                          {errors.paymentProof && <p className="text-red-500 text-xs mt-1">{errors.paymentProof}</p>}
+                      </div>
                   </div>
 
-                  <div>
-                      <label className="form-label">Interest in GI & HPB Pathology <span className="text-red-500">*</span></label>
+                    <div>
+                      <label className="form-label">Category <span className="text-red-500">*</span></label>
                       <select name="Interest" value={formData.Interest} onChange={handleChange} className="form-input">
-                          <option>I am a gastrointestinal & hepatopancreatobiliary pathologist</option>
-                          <option>I am a PG student interested in this field of pathology</option>
-                          <option>I am a Fellow/ PDCC in gastrointestinal & hepatopancreatobiliary pathology</option>
-                          <option>I am a clinical gastroenterologist/ gastrointestinal surgeon/ radiologist</option>
-                          <option>I am a researcher in this field</option>
-                          <option>I am a pathologist who wants to be associated with this society to remain updated</option>
+                        {categoryOptions.map((category) => (
+                          <option key={category.slug || category.label} value={category.value || category.label}>
+                            {category.label}
+                          </option>
+                        ))}
                       </select>
-                  </div>
+                    </div>
 
                   <button 
                     type="submit" 
@@ -517,6 +593,11 @@ const MembershipRegistration = () => {
                   >
                     {regStatus === 'submitting' ? 'Submitting Application...' : 'Submit Application'}
                   </button>
+                  {regStatus === 'error' && (
+                    <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
+                      {regError}
+                    </p>
+                  )}
                 </form>
               )}
             </div>
@@ -528,9 +609,7 @@ const MembershipRegistration = () => {
           <div className="p-12 max-w-2xl mx-auto min-h-[400px]">
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Check Application Status</h2>
-              <p className="text-gray-600 dark:text-gray-300 text-sm mt-2">
-                Enter the email address you used during registration to check your status and download documents.
-              </p>
+              <MarkdownBlock content={settings.status_intro_markdown} className="text-center text-gray-600 dark:text-gray-300" />
             </div>
 
             <div className="flex gap-3 mb-8">
@@ -553,33 +632,45 @@ const MembershipRegistration = () => {
             {/* RESULTS DISPLAY */}
             {statusResult === 'found' && memberData && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-gray-50 dark:bg-gray-700 p-8 rounded-xl border border-gray-200 dark:border-gray-600 text-center">
-                <h3 className="text-xl font-bold text-primary dark:text-white mb-2">Hello, {memberData.name}</h3>
+                <h3 className="text-xl font-bold text-primary dark:text-white mb-2">Hello, {memberData.applicant_name}</h3>
                 
                 <div className="my-6">
                    <span className={`px-4 py-2 rounded-full text-sm font-bold ${
-                     memberData.status === 'Authorized' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                     memberData.status === 'approved'
+                       ? 'bg-green-100 text-green-800'
+                       : memberData.status === 'rejected'
+                         ? 'bg-red-100 text-red-800'
+                         : 'bg-yellow-100 text-yellow-800'
                    }`}>
-                     Application Status: {memberData.status}
+                     Application Status: {membershipStatusLabels[memberData.status] || memberData.status}
                    </span>
                 </div>
 
-                {memberData.status === 'Authorized' ? (
+                {memberData.status === 'approved' ? (
                   <div className="space-y-4">
                     <p className="text-green-600 dark:text-green-300 font-medium">
                       Congratulations! Your membership has been approved.
                     </p>
+                    {memberData.membership_number && (
+                      <p className="font-bold text-primary dark:text-white">Membership No: {memberData.membership_number}</p>
+                    )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-                      {memberData.receipt && (
-                        <a href={memberData.receipt} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-primary text-white py-3 px-4 rounded hover:bg-blue-900 transition-colors">
+                      {memberData.receipt_url && (
+                        <a href={memberData.receipt_url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-primary text-white py-3 px-4 rounded hover:bg-blue-900 transition-colors">
                           <span className="material-symbols-outlined">receipt</span> Download Receipt
                         </a>
                       )}
-                      {memberData.certificate && (
-                        <a href={memberData.certificate} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-gold-DEFAULT text-primary py-3 px-4 rounded hover:bg-yellow-500 transition-colors">
+                      {memberData.certificate_url && (
+                        <a href={memberData.certificate_url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-gold-DEFAULT text-primary py-3 px-4 rounded hover:bg-yellow-500 transition-colors">
                           <span className="material-symbols-outlined">verified</span> Download Certificate
                         </a>
                       )}
                     </div>
+                  </div>
+                ) : memberData.status === 'rejected' ? (
+                  <div className="bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 p-4 rounded text-sm text-left border border-red-100 dark:border-red-800">
+                    <p className="font-bold mb-1">Your application was not approved.</p>
+                    <p>The submitted application or payment details could not be verified. Please contact the SGIHPBP admin team if you need clarification or want to submit corrected details.</p>
                   </div>
                 ) : (
                   <div className="bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 p-4 rounded text-sm text-left">
@@ -607,14 +698,11 @@ const MembershipRegistration = () => {
         )}
 
         {/* === TAB 3: PROMOTIONAL DRIVE === */}
-        {activeTab === 'promotional' && settings.promo_enabled && (
-          <div className="p-12 max-w-4xl mx-auto min-h-[400px]">
-            <div className="bg-yellow-50 dark:bg-gray-700 border border-yellow-200 dark:border-gray-600 rounded-xl p-8 shadow-sm">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">{settings.promo_title || 'Promotional Membership Drive'}</h2>
-              
-              <div className="space-y-6 text-gray-800 dark:text-gray-200 text-lg">
-                <MarkdownBlock content={settings.promo_markdown} />
-              </div>
+        {activeTab === 'promo' && settings.promo_enabled && (
+          <div className="p-12 max-w-3xl mx-auto min-h-[300px]">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-8 text-center shadow-sm">
+              <h2 className="text-2xl font-bold text-primary mb-3">{settings.promo_title}</h2>
+              <MarkdownBlock content={settings.promo_markdown} className="text-left text-gray-700" />
             </div>
           </div>
         )}

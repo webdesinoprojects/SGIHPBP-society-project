@@ -69,6 +69,7 @@ async function resolveMembershipPlan(value) {
 export function normalizeMembershipType(labelOrValue) {
   const value = String(labelOrValue || '').toLowerCase();
   if (value.includes('overseas')) return 'overseas';
+  if (value.includes('associate')) return 'associate_life';
   if (value.includes('ad hoc') || value.includes('ad_hoc')) return 'ad_hoc';
   return 'life';
 }

@@ -7,7 +7,15 @@ export async function createMembershipReceiptDocx(application, fileName) {
   const entries = await readDocxTemplate(receiptTemplateUrl);
   const documentEntry = getDocumentEntry(entries, 'receipt');
   const documentXml = new TextDecoder().decode(documentEntry.data);
-  documentEntry.data = textBytes(replaceReceiptFields(documentXml, application));
+  documentEntry.data = textBytes(replaceTemplateTokens(documentXml, {
+    BILL_NUMBER: application.bill_number || '-',
+    AMOUNT: formatReceiptAmount(application),
+    APPLICANT_NAME: application.applicant_name || '-',
+    TRANSACTION_DETAILS: application.transaction_details || '-',
+    MEMBER_TYPE: documentMemberType(application),
+    MEMBERSHIP_NUMBER: application.membership_number || '-',
+    APPROVED_DATE: formatDocumentDate(application.approved_at ? new Date(application.approved_at) : new Date()),
+  }));
   return new File([zipStored(entries)], fileName, { type: DOCX_MIME });
 }
 
@@ -16,51 +24,19 @@ export async function createMembershipCertificateDocx(application, fileName) {
   const documentEntry = getDocumentEntry(entries, 'certificate');
   const documentXml = new TextDecoder().decode(documentEntry.data);
   const memberLabel = `${application.applicant_name || '-'} (${application.membership_number || '-'})`.toUpperCase();
-  documentEntry.data = textBytes(replaceTextRunRange(
-    documentXml,
-    /<w:t>Name \(membership number\)<\/w:t>/,
-    `<w:t>${escapeXml(memberLabel)}</w:t>`,
-    'Certificate template placeholder was not found.',
-  ));
+  documentEntry.data = textBytes(replaceTemplateTokens(documentXml, {
+    MEMBERSHIP_TITLE: documentMembershipTitle(application),
+    MEMBER_LABEL: memberLabel,
+  }));
   return new File([zipStored(entries)], fileName, { type: DOCX_MIME });
 }
 
-function replaceReceiptFields(documentXml, application) {
-  const approvedDate = application.approved_at ? new Date(application.approved_at) : new Date();
-  const dateLabel = formatDocumentDate(approvedDate);
-  const amount = application.amount_label || `${application.amount_paid || ''} ${application.currency || ''}`.trim() || '-';
-  const billNumber = application.bill_number || application.membership_number || '-';
-  const applicantName = application.applicant_name || '-';
-  const transaction = application.transaction_details || '-';
-  const membershipType = application.membership_type_label || 'Membership';
-
-  let xml = replaceTextRunRange(
-    documentXml,
-    /<w:t>Bill No: 0001\/<\/w:t>[\s\S]*?<w:t>6<\/w:t>/,
-    `<w:t>${escapeXml(`Bill No: ${billNumber}`)}</w:t>`,
-    'Receipt bill number placeholder was not found.',
-  );
-
-  const receiptLines = [
-    `This is to certify that a total sum of INR/ USD ${amount} has been received from`,
-    `${applicantName}, in Cash/ by Cheque number ______________, dated__________, or via Online transfer`,
-    `No ${transaction}, dated ${dateLabel}, on account of his/ her application`,
-    `for ${membershipType} application.`,
-  ];
-
-  xml = replaceTextRunRange(
-    xml,
-    /<w:t>This is to certify that a total sum of INR\/ USD[\s\S]*?Membership application\. <\/w:t>/,
-    textLinesInsideCurrentRun(receiptLines),
-    'Receipt body placeholder was not found.',
-  );
-
-  return replaceTextRunRange(
-    xml,
-    /<w:t>Dated ___<\/w:t>[\s\S]*?<w:t>_______<\/w:t>/,
-    `<w:t>${escapeXml(`Dated ${dateLabel}`)}</w:t>`,
-    'Receipt date placeholder was not found.',
-  );
+function replaceTemplateTokens(documentXml, values) {
+  return Object.entries(values).reduce((xml, [key, value]) => {
+    const token = `{{${key}}}`;
+    if (!xml.includes(token)) throw new Error(`Document template is missing ${token}.`);
+    return xml.replaceAll(token, escapeXml(value));
+  }, documentXml);
 }
 
 function getDocumentEntry(entries, label) {
@@ -69,17 +45,34 @@ function getDocumentEntry(entries, label) {
   return documentEntry;
 }
 
-function replaceTextRunRange(documentXml, pattern, replacement, errorMessage) {
-  if (!pattern.test(documentXml)) throw new Error(errorMessage);
-  return documentXml.replace(pattern, replacement);
+function documentMembershipTitle(application) {
+  const type = String(application.membership_type || '').toLowerCase();
+  if (type === 'founder') return 'FOUNDER MEMBERSHIP';
+  if (type === 'ad_hoc') return 'AD HOC MEMBERSHIP (FOR 3 YEARS)';
+  if (type === 'associate_life') return 'ASSOCIATE LIFE MEMBERSHIP';
+  if (type === 'life') return 'LIFE MEMBERSHIP';
+  return String(application.membership_type_label || 'Membership').toUpperCase();
 }
 
-function textLinesInsideCurrentRun(lines) {
-  return lines.map((line, index) => {
-    const text = `<w:t>${escapeXml(line)}</w:t>`;
-    if (index === 0) return text;
-    return `</w:r><w:r><w:br/></w:r><w:r>${text}`;
-  }).join('');
+function documentMemberType(application) {
+  const type = String(application.membership_type || '').toLowerCase();
+  if (type === 'founder') return 'Founder Member';
+  if (type === 'ad_hoc') return 'Ad Hoc Member';
+  if (type === 'associate_life') return 'Associate Life Member';
+  if (type === 'life') return 'Life Member';
+  return String(application.membership_type_label || 'Member').replace(/Membership/i, 'Member');
+}
+
+function formatReceiptAmount(application) {
+  const currency = application.currency || 'INR';
+  const amount = Number(application.amount_paid);
+  if (Number.isFinite(amount) && amount > 0) {
+    return `${currency} ${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(amount)}/-`;
+  }
+
+  const amountLabel = String(application.amount_label || '').trim();
+  const match = amountLabel.match(/^([\d,.]+)\s+([A-Z]{3})$/);
+  return match ? `${match[2]} ${match[1]}/-` : amountLabel || '-';
 }
 
 async function readDocxTemplate(url) {

@@ -9,12 +9,12 @@ export const fallbackMembershipPlans = [
     slug: 'life',
     label: 'Life Membership',
     description: 'One-time payment for lifetime membership and full access to society benefits.',
-    amountLabel: '5,000 INR',
-    amount: 5000,
+    amountLabel: '10,000 INR',
+    amount: 10000,
     currency: 'INR',
     durationLabel: 'One-Time Payment',
-    numberPrefix: 'L',
-    number_prefix: 'L',
+    numberPrefix: 'GM',
+    number_prefix: 'GM',
     validityYears: null,
     validity_years: null,
     sort_order: 10,
@@ -25,40 +25,40 @@ export const fallbackMembershipPlans = [
     slug: 'ad_hoc',
     label: 'Ad Hoc Membership (3 years)',
     description: 'Valid for 3 years and renewable on reapplication and repayment for another 3-year period.',
-    amountLabel: '1,500 INR',
-    amount: 1500,
+    amountLabel: '2,500 INR',
+    amount: 2500,
     currency: 'INR',
     durationLabel: 'Per 3 Years',
-    numberPrefix: 'AH',
-    number_prefix: 'AH',
+    numberPrefix: 'AdM',
+    number_prefix: 'AdM',
     validityYears: 3,
     validity_years: 3,
     sort_order: 20,
     is_active: true,
   },
   {
-    value: 'overseas',
-    slug: 'overseas',
-    label: 'Overseas Membership (3 years)',
-    description: 'For overseas eligible or nominated members. Valid for 3 years and renewable in 3-year blocks.',
-    amountLabel: '200 USD',
-    amount: 200,
-    currency: 'USD',
-    durationLabel: 'Per 3 Years',
-    numberPrefix: 'O',
-    number_prefix: 'O',
-    validityYears: 3,
-    validity_years: 3,
+    value: 'associate_life',
+    slug: 'associate_life',
+    label: 'Associate Life Membership',
+    description: 'One-time payment for associate life membership.',
+    amountLabel: '10,000 INR',
+    amount: 10000,
+    currency: 'INR',
+    durationLabel: 'One-Time Payment',
+    numberPrefix: 'ALM',
+    number_prefix: 'ALM',
+    validityYears: null,
+    validity_years: null,
     sort_order: 30,
     is_active: true,
   },
 ];
 
 export const fallbackMembershipCategories = [
-  { slug: 'academic-pathologist', value: 'I am an academic pathologist', label: 'I am an academic pathologist', sort_order: 10, is_active: true },
-  { slug: 'practicing-pathologist', value: 'I am a practicing pathologist', label: 'I am a practicing pathologist', sort_order: 20, is_active: true },
-  { slug: 'post-graduate-student-fellow', value: 'I am a post graduate student/ fellow', label: 'I am a post graduate student/ fellow', sort_order: 30, is_active: true },
-  { slug: 'pathologist-outside-india', value: 'I am a pathologist working outside India', label: 'I am a pathologist working outside India', sort_order: 40, is_active: true },
+  { slug: 'gi-hpb-pathologist', value: 'I am a gastrointestinal & hepatopancreatobiliary pathologist', label: 'I am a gastrointestinal & hepatopancreatobiliary pathologist', sort_order: 10, is_active: true },
+  { slug: 'pg-student-interested', value: 'I am a PG student interested in this field of pathology', label: 'I am a PG student interested in this field of pathology', sort_order: 20, is_active: true },
+  { slug: 'gi-hpb-fellow', value: 'I am a Fellow/ PDCC in gastrointestinal & hepatopancreatobiliary pathology', label: 'I am a Fellow/ PDCC in gastrointestinal & hepatopancreatobiliary pathology', sort_order: 30, is_active: true },
+  { slug: 'gi-clinician', value: 'I am a clinical gastroenterologist/ gastrointestinal surgeon/ radiologist', label: 'I am a clinical gastroenterologist/ gastrointestinal surgeon/ radiologist', sort_order: 40, is_active: true },
 ];
 
 export const fallbackPortalSettings = {
@@ -68,11 +68,11 @@ export const fallbackPortalSettings = {
   payment_title: 'Payment Information',
   payment_markdown: `## Bank Transfer
 
-- **Account Name:** SGIHPBP
-- **Account No:** 1210463576
-- **Bank Details:** CENTRAL BANK OF INDIA
-- **Branch:** LADY HARDINGE MED COLL AND HOSPITAL BRANCH, OPP PANCHKUIAN ROAD
-- **IFSC Code:** CBIN0283462`,
+- **Account Name:** Society of Gastrointestinal & Hepato-Pancreatobiliary Pathologist's
+- **Bank:** Bank of Baroda
+- **Account No:** 26020100024967
+- **IFSC Code:** BARB0RAMDEL (5th character is zero)
+- **Branch:** Dr. RML Hospital, New Delhi`,
   qr_image_path: '',
   qr_caption: 'Accepts UPI, GPay, Paytm',
   registration_success_markdown: 'We have received your details. You can check your status in the **Check Status** tab.',
@@ -381,7 +381,7 @@ function formatAmountLabel(amount, currency) {
 }
 
 function normalizePrefix(value = '') {
-  const prefix = String(value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+  const prefix = String(value || '').trim().replace(/[^A-Za-z0-9]/g, '').slice(0, 8);
   return prefix || null;
 }
 
