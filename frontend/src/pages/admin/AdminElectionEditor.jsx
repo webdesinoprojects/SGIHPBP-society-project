@@ -6,7 +6,9 @@ import ElectionStatusPill from '../../components/elections/ElectionStatusPill';
 import { useAuth } from '../../hooks/useAuth';
 import {
   createElection,
+  defaultElectionMembershipGroups,
   defaultElectionVoteLimits,
+  electionMembershipGroups,
   electionStatuses,
   formatDateTime,
   getElectionWithCandidates,
@@ -21,6 +23,7 @@ const blankForm = {
   status: 'draft',
   starts_at: '',
   ends_at: '',
+  eligible_membership_groups: [...defaultElectionMembershipGroups],
 };
 
 const AdminElectionEditor = () => {
@@ -51,6 +54,9 @@ const AdminElectionEditor = () => {
       status: row.status || 'draft',
       starts_at: toDateTimeLocal(row.starts_at),
       ends_at: toDateTimeLocal(row.ends_at),
+      eligible_membership_groups: row.eligible_membership_groups?.length
+        ? row.eligible_membership_groups
+        : [...defaultElectionMembershipGroups],
     });
     setVoteLimits(mergeVoteLimits(row.vote_limits));
     setLoading(false);
@@ -75,6 +81,18 @@ const AdminElectionEditor = () => {
     )));
   };
 
+  const toggleMembershipGroup = (group) => {
+    setForm((current) => {
+      const selected = current.eligible_membership_groups || [];
+      return {
+        ...current,
+        eligible_membership_groups: selected.includes(group)
+          ? selected.filter((value) => value !== group)
+          : [...selected, group],
+      };
+    });
+  };
+
   const saveElection = async (event) => {
     event.preventDefault();
     setSaving(true);
@@ -83,6 +101,12 @@ const AdminElectionEditor = () => {
     if (form.starts_at && form.ends_at && new Date(form.starts_at) >= new Date(form.ends_at)) {
       setSaving(false);
       setStatus({ type: 'error', message: 'End time must be after start time.' });
+      return;
+    }
+
+    if (!form.eligible_membership_groups?.length) {
+      setSaving(false);
+      setStatus({ type: 'error', message: 'Select at least one membership group that can vote.' });
       return;
     }
 
@@ -175,6 +199,29 @@ const AdminElectionEditor = () => {
                 </label>
               </div>
               <div className="rounded-lg border border-gray-100 bg-[#fbfcfe] p-4">
+                <p className="text-sm font-bold text-primary">Who can vote in this election?</p>
+                <p className="mt-1 text-xs font-semibold text-gray-500">Select one or more membership-number groups. This is enforced by the database when each vote is cast.</p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {electionMembershipGroups.map((group) => {
+                    const checked = form.eligible_membership_groups?.includes(group.value);
+                    return (
+                      <label key={group.value} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition ${checked ? 'border-primary bg-blue-50' : 'border-gray-200 bg-white'}`}>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleMembershipGroup(group.value)}
+                          className="mt-1 h-4 w-4 accent-primary"
+                        />
+                        <span>
+                          <span className="block text-sm font-bold text-primary">{group.code}</span>
+                          <span className="block text-xs font-semibold text-gray-500">{group.label}</span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="rounded-lg border border-gray-100 bg-[#fbfcfe] p-4">
                 <p className="text-sm font-bold text-primary">Voting rights by post</p>
                 <p className="mt-1 text-xs font-semibold text-gray-500">Office bearer posts stay at one vote. Set EC Member voting rights from 1 to 15.</p>
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -220,6 +267,12 @@ const AdminElectionEditor = () => {
                 <InfoRow label="Start" value={formatDateTime(election?.starts_at)} />
                 <InfoRow label="End" value={formatDateTime(election?.ends_at)} />
                 <InfoRow label="Nominees" value={election?.candidates?.length ?? 0} />
+                <InfoRow
+                  label="Eligible groups"
+                  value={(election || form).eligible_membership_groups?.map((value) => (
+                    electionMembershipGroups.find((group) => group.value === value)?.code || value.toUpperCase()
+                  )).join(', ') || 'None'}
+                />
               </dl>
             </div>
 

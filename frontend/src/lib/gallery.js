@@ -1,6 +1,5 @@
 import { isSupabaseConfigured, supabase } from './supabase';
-
-const BUCKET = 'gallery-assets';
+import { uploadContentFile } from './contentUpload';
 
 export function slugifyName(value) {
   const slug = String(value || '')
@@ -11,7 +10,7 @@ export function slugifyName(value) {
   return slug || `item-${Date.now()}`;
 }
 
-export async function listGalleryCategories({ admin = false } = {}) {
+export async function listGalleryCategories({ admin = false, signal } = {}) {
   if (!isSupabaseConfigured) return [];
 
   let query = supabase
@@ -21,13 +20,14 @@ export async function listGalleryCategories({ admin = false } = {}) {
     .order('name', { ascending: true });
 
   if (!admin) query = query.eq('is_active', true);
+  if (signal) query = query.abortSignal(signal);
 
   const { data, error } = await query;
   if (error) throw error;
   return data || [];
 }
 
-export async function listGalleryImages({ admin = false, categoryId } = {}) {
+export async function listGalleryImages({ admin = false, categoryId, signal } = {}) {
   if (!isSupabaseConfigured) return [];
 
   let query = supabase
@@ -52,6 +52,7 @@ export async function listGalleryImages({ admin = false, categoryId } = {}) {
 
   if (!admin) query = query.eq('is_active', true);
   if (categoryId) query = query.eq('category_id', categoryId);
+  if (signal) query = query.abortSignal(signal);
 
   const { data, error } = await query;
   if (error) throw error;
@@ -114,27 +115,107 @@ export async function deleteGalleryCategory(id) {
 
 export async function uploadGalleryImage(file, { folder = 'gallery' } = {}) {
   if (!file) throw new Error('Please choose an image file.');
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+    throw new Error('Please use a JPG, PNG or WebP image.');
+  }
+  if (file.size > 15 * 1024 * 1024) {
+    throw new Error('Please use an image smaller than 15 MB.');
+  }
 
-  const path = `${folder}/${Date.now()}-${safeFileName(file.name)}`;
-  const { error } = await supabase.storage
-    .from(BUCKET)
-    .upload(path, file, {
-      contentType: file.type,
-      upsert: false,
-    });
-
-  if (error) throw error;
-
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-  return { url: data.publicUrl, path, fileId: null, width: null, height: null };
+  const prepared = await optimizeGalleryImage(file);
+  const uploaded = await uploadContentFile(prepared.file, { folder, fallback: false });
+  return {
+    url: uploaded.url,
+    path: uploaded.path,
+    fileId: uploaded.fileId,
+    width: prepared.width,
+    height: prepared.height,
+  };
 }
 
-function safeFileName(name) {
-  return String(name || `upload-${Date.now()}`)
-    .toLowerCase()
-    .replace(/[^a-z0-9.]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    || `upload-${Date.now()}`;
+export async function validateGalleryImageUrl(value) {
+  const url = String(value || '').trim();
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error('Please enter a valid image URL.');
+  }
+
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    throw new Error('Please enter an HTTP or HTTPS image URL.');
+  }
+
+  await new Promise((resolve, reject) => {
+    const image = new Image();
+    const timeout = window.setTimeout(() => {
+      image.src = '';
+      reject(new Error('The image link took too long to load. Please check the URL.'));
+    }, 10000);
+
+    image.onload = () => {
+      window.clearTimeout(timeout);
+      resolve();
+    };
+    image.onerror = () => {
+      window.clearTimeout(timeout);
+      reject(new Error('The image link is unavailable. Please use a direct public image URL.'));
+    };
+    image.src = url;
+  });
+
+  return url;
+}
+
+async function optimizeGalleryImage(file) {
+  const bitmap = await loadImageBitmap(file);
+  const maxDimension = 1920;
+  const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+  const width = Math.max(1, Math.round(bitmap.width * scale));
+  const height = Math.max(1, Math.round(bitmap.height * scale));
+
+  if (scale === 1 && file.size <= 1.5 * 1024 * 1024) {
+    bitmap.close?.();
+    return { file, width, height };
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d');
+  context.drawImage(bitmap, 0, 0, width, height);
+  bitmap.close?.();
+
+  const outputType = file.type === 'image/png' ? 'image/webp' : file.type;
+  const blob = await new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (result) => (result ? resolve(result) : reject(new Error('The image could not be prepared for upload.'))),
+      outputType,
+      0.84,
+    );
+  });
+  const extension = outputType === 'image/webp' ? 'webp' : 'jpg';
+  const baseName = file.name.replace(/\.[^.]+$/, '') || 'gallery-image';
+  const optimized = new File([blob], `${baseName}.${extension}`, { type: outputType });
+  return { file: optimized, width, height };
+}
+
+async function loadImageBitmap(file) {
+  if ('createImageBitmap' in window) return window.createImageBitmap(file);
+
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('The selected image could not be read.'));
+    };
+    image.src = url;
+  });
 }
 
 export async function createGalleryImage(input, userId) {

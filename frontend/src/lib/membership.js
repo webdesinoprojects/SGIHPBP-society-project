@@ -201,8 +201,27 @@ export async function updateMembershipApplication(id, input) {
     await assertMembershipNumberAvailable(id, input.membership_number);
   }
 
+  const editableDetails = {};
+  if (input.applicant_name !== undefined) editableDetails.applicant_name = requiredText(input.applicant_name, 'Applicant name');
+  if (input.institution !== undefined) editableDetails.institution = requiredText(input.institution, 'Institution');
+  if (input.qualification !== undefined) editableDetails.qualification = requiredText(input.qualification, 'Qualification');
+  if (input.practicing_pathologist !== undefined) editableDetails.practicing_pathologist = Boolean(input.practicing_pathologist);
+  if (input.student_status !== undefined) editableDetails.student_status = optionalText(input.student_status);
+  if (input.address !== undefined) editableDetails.address = requiredText(input.address, 'Address');
+  if (input.email !== undefined) editableDetails.email = requiredText(input.email, 'Email').toLowerCase();
+  if (input.phone !== undefined) editableDetails.phone = requiredText(input.phone, 'Phone');
+  if (input.transaction_details !== undefined) editableDetails.transaction_details = requiredText(input.transaction_details, 'Transaction details');
+  if (input.interest_category !== undefined) editableDetails.interest_category = optionalText(input.interest_category);
+  if (
+    input.membership_type
+    && input.membership_type !== input.original_membership_type
+  ) {
+    editableDetails.membership_type = input.membership_type;
+  }
+
   const payload = nextStatus === 'rejected'
     ? {
+        ...editableDetails,
         status: 'rejected',
         admin_notes: input.admin_notes || null,
         membership_number: null,
@@ -219,6 +238,7 @@ export async function updateMembershipApplication(id, input) {
         last_email_error: null,
       }
     : {
+        ...editableDetails,
         status: nextStatus,
         admin_notes: input.admin_notes || null,
         membership_number: input.membership_number || null,
@@ -233,6 +253,17 @@ export async function updateMembershipApplication(id, input) {
     .single();
   if (error) throwMembershipError(error);
   return data;
+}
+
+function requiredText(value, label) {
+  const normalized = String(value || '').trim();
+  if (!normalized) throw new Error(`${label} is required.`);
+  return normalized;
+}
+
+function optionalText(value) {
+  const normalized = String(value || '').trim();
+  return normalized || null;
 }
 
 export async function approveMembershipApplication(id, { membershipNumber = '', billNumber = '' } = {}) {

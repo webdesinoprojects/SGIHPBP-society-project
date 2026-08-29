@@ -7,6 +7,7 @@ import ElectionStatusPill from '../../components/elections/ElectionStatusPill';
 import {
   deleteElection,
   electionRuntimeStatus,
+  formatElectionMembershipGroupCodes,
   formatDateTime,
   listElectionVotes,
   listElections,
@@ -162,6 +163,7 @@ const AdminElections = () => {
                           {election.title}
                         </Link>
                         {election.description && <p className="safe-wrap mt-1 max-w-lg text-xs leading-5 text-gray-500">{election.description}</p>}
+                        <p className="mt-1 text-xs font-bold text-primary">Eligible: {formatElectionMembershipGroupCodes(election.eligible_membership_groups)}</p>
                       </td>
                       <td className="px-4 py-3"><ElectionStatusPill election={election} /></td>
                       <td className="px-4 py-3 font-bold text-gray-900">{election.candidates.length}</td>

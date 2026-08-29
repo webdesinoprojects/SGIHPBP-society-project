@@ -12,13 +12,26 @@ const Gallery = () => {
   const [error, setError] = useState('');
 
   const loadGallery = useCallback(async () => {
-    const [cats, imgs] = await Promise.all([
-      listGalleryCategories(),
-      listGalleryImages(),
-    ]);
-    setCategories(cats);
-    setImages(imgs);
-    setLoading(false);
+    setLoading(true);
+    setError('');
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 15000);
+    try {
+      const [cats, imgs] = await Promise.all([
+        listGalleryCategories({ signal: controller.signal }),
+        listGalleryImages({ signal: controller.signal }),
+      ]);
+      setCategories(cats);
+      setImages(imgs);
+    } catch (loadError) {
+      if (controller.signal.aborted) {
+        throw new Error('Gallery loading timed out. Check your connection and try again.');
+      }
+      throw loadError;
+    } finally {
+      window.clearTimeout(timeout);
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -116,7 +129,12 @@ const Gallery = () => {
       )}
 
       {error && !loading && (
-        <div className="rounded-xl border border-red-100 bg-red-50 p-5 font-semibold text-red-700">{error}</div>
+        <div className="rounded-xl border border-red-100 bg-red-50 p-5 text-center font-semibold text-red-700">
+          <p>{error}</p>
+          <button type="button" onClick={() => loadGallery().catch((loadError) => setError(loadError.message || 'Unable to load gallery.'))} className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white">
+            Try again
+          </button>
+        </div>
       )}
 
       {!loading && !error && (
@@ -130,9 +148,7 @@ const Gallery = () => {
                 className="text-left rounded-xl overflow-hidden bg-white dark:bg-background-dark border border-border-light dark:border-border-dark shadow-sm"
                 onClick={() => setLightboxIndex(index)}
               >
-                <div className="aspect-[4/3] overflow-hidden">
-                  <img src={image.image_url} alt={image.title} className="w-full h-full object-cover" loading="lazy" />
-                </div>
+                <PublicGalleryImage image={image} />
                 <div className="p-3">
                   <p className="font-semibold text-primary dark:text-white truncate">{image.title}</p>
                   <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
@@ -201,6 +217,32 @@ const Gallery = () => {
         )}
       </AnimatePresence>
     </motion.main>
+  );
+};
+
+const PublicGalleryImage = ({ image }) => {
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => setFailed(false), [image.image_url]);
+
+  return (
+    <div className="aspect-[4/3] overflow-hidden bg-gray-100 dark:bg-gray-800">
+      {failed ? (
+        <div className="flex h-full flex-col items-center justify-center gap-2 p-4 text-center text-text-muted-light dark:text-text-muted-dark">
+          <span className="material-symbols-outlined text-4xl">broken_image</span>
+          <span className="text-sm font-semibold">Image unavailable</span>
+        </div>
+      ) : (
+        <img
+          src={image.image_url}
+          alt={image.title}
+          className="h-full w-full object-cover"
+          loading="lazy"
+          decoding="async"
+          onError={() => setFailed(true)}
+        />
+      )}
+    </div>
   );
 };
 

@@ -53,11 +53,19 @@ const BodyMemberCard = ({ member }) => (
 
 const AdvisorCard = ({ member }) => (
   <motion.div
-    className="rounded-lg border border-gray-200 bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-800 flex items-center justify-center min-h-[5rem]"
-    whileHover={{ scale: 1.02, y: -2, boxShadow: '0px 4px 6px -1px rgba(0,0,0,0.1)' }}
+    className="flex min-h-[10rem] flex-col items-center justify-center rounded-lg border border-gray-200 bg-white p-5 text-center shadow-sm dark:border-gray-700 dark:bg-gray-800"
+    whileHover={{ scale: 1.02, y: -3, boxShadow: '0px 8px 12px -3px rgba(0,0,0,0.08)' }}
     transition={{ type: 'spring', stiffness: 300 }}
   >
+    <div className="mb-3 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-gray-700">
+      {member.image_url ? (
+        <img src={member.image_url} alt={member.name} className="h-full w-full object-cover" />
+      ) : (
+        <UserCircle2 size={44} className="text-gray-400 dark:text-gray-300" aria-hidden="true" />
+      )}
+    </div>
     <h3 className="text-base font-bold text-primary dark:text-white">{member.name}</h3>
+    {member.position && <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{member.position}</p>}
   </motion.div>
 );
 

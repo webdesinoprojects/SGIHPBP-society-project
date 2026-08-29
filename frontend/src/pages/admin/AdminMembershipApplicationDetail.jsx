@@ -15,12 +15,27 @@ import {
   updateMembershipApplication,
   uploadMembershipAdminDocument,
 } from '../../lib/membership';
+import { loadMembershipPortalData } from '../../lib/membershipConfig';
 
 const AdminMembershipApplicationDetail = () => {
   const { applicationId } = useParams();
   const [application, setApplication] = useState(null);
   const [assets, setAssets] = useState({});
+  const [plans, setPlans] = useState([]);
+  const [interestCategories, setInterestCategories] = useState([]);
   const [form, setForm] = useState({
+    applicant_name: '',
+    institution: '',
+    qualification: '',
+    practicing_pathologist: true,
+    student_status: '',
+    address: '',
+    email: '',
+    phone: '',
+    membership_type: 'life',
+    original_membership_type: 'life',
+    transaction_details: '',
+    interest_category: '',
     status: 'submitted',
     membership_number: '',
     bill_number: '',
@@ -45,6 +60,18 @@ const AdminMembershipApplicationDetail = () => {
     if (row) {
       setForm((current) => ({
         ...current,
+        applicant_name: row.applicant_name || '',
+        institution: row.institution || '',
+        qualification: row.qualification || '',
+        practicing_pathologist: Boolean(row.practicing_pathologist),
+        student_status: row.student_status || '',
+        address: row.address || '',
+        email: row.email || '',
+        phone: row.phone || '',
+        membership_type: row.membership_type || 'life',
+        original_membership_type: row.membership_type || 'life',
+        transaction_details: row.transaction_details || '',
+        interest_category: row.interest_category || '',
         status: row.status || 'submitted',
         membership_number: row.membership_number || '',
         bill_number: row.bill_number || '',
@@ -71,6 +98,15 @@ const AdminMembershipApplicationDetail = () => {
   }, [loadApplication]);
 
   useEffect(() => {
+    loadMembershipPortalData({ admin: true })
+      .then((data) => {
+        setPlans(data.plans || []);
+        setInterestCategories(data.categories || []);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (!status.message) return undefined;
     const timer = window.setTimeout(() => setStatus({ type: null, message: '' }), 5000);
     return () => window.clearTimeout(timer);
@@ -80,7 +116,11 @@ const AdminMembershipApplicationDetail = () => {
     const { name, value, files } = event.target;
     setForm((current) => ({
       ...current,
-      [name]: files ? files[0] || null : value,
+      [name]: files
+        ? files[0] || null
+        : name === 'practicing_pathologist'
+          ? value === 'true'
+          : value,
     }));
   };
 
@@ -92,11 +132,22 @@ const AdminMembershipApplicationDetail = () => {
       if (form.status === 'approved' && !application.membership_number) {
         throw new Error('Use "Approve / assign number" so the membership number and bill number are generated correctly.');
       }
+      const shouldRegenerateDocuments = application.status === 'approved' && hasDocumentChanges(application, form);
       let next = await updateMembershipApplication(application.id, form);
+      let documentWarning = '';
+      if (shouldRegenerateDocuments && (application.receipt_path || application.certificate_path)) {
+        try {
+          next = await generateMembershipDocuments(next);
+        } catch (documentError) {
+          documentWarning = documentError.message || 'Unable to regenerate documents.';
+        }
+      }
       if (form.receiptFile) next = await uploadMembershipAdminDocument(application.id, form.receiptFile, 'receipt');
       if (form.certificateFile) next = await uploadMembershipAdminDocument(application.id, form.certificateFile, 'certificate');
       setApplication(next);
-      setStatus({ type: 'success', message: 'Application review saved.' });
+      setStatus(documentWarning
+        ? { type: 'error', message: `Corrections were saved, but documents were not regenerated: ${documentWarning}` }
+        : { type: 'success', message: shouldRegenerateDocuments ? 'Application corrections saved and documents regenerated.' : 'Application review saved.' });
       await loadApplication();
     } catch (error) {
       setStatus({ type: 'error', message: error.message || 'Unable to save application.' });
@@ -109,6 +160,10 @@ const AdminMembershipApplicationDetail = () => {
     setSaving(true);
     setStatus({ type: null, message: '' });
     try {
+      await updateMembershipApplication(application.id, {
+        ...form,
+        status: application.status === 'approved' ? 'approved' : 'under_review',
+      });
       const next = await approveMembershipApplication(application.id, {
         membershipNumber: form.membership_number,
         billNumber: form.bill_number,
@@ -221,11 +276,89 @@ const AdminMembershipApplicationDetail = () => {
           </div>
         </section>
 
-        <form onSubmit={saveReview} className="min-w-0 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+        <form onSubmit={saveReview} className="min-w-0 rounded-lg border border-gray-200 bg-white p-6 shadow-sm 2xl:sticky 2xl:top-6 2xl:max-h-[calc(100vh-3rem)] 2xl:self-start 2xl:overflow-y-auto">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-gold-DEFAULT">Admin Review</p>
-          <h2 className="mt-1 text-2xl font-bold text-primary">Approval details</h2>
+          <h2 className="mt-1 text-2xl font-bold text-primary">Edit and approve</h2>
 
           <div className="mt-5 grid min-w-0 gap-4">
+            <div className="grid gap-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <div>
+                <h3 className="font-bold text-primary">Applicant details</h3>
+                <p className="mt-1 text-xs leading-5 text-gray-500">Corrections are allowed before or after approval. Approved member-directory details update automatically.</p>
+              </div>
+              <Field label="Name">
+                <input name="applicant_name" value={form.applicant_name} onChange={updateField} required className="field-input" />
+              </Field>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Email">
+                  <input type="email" name="email" value={form.email} onChange={updateField} required className="field-input" />
+                </Field>
+                <Field label="Phone">
+                  <input type="tel" name="phone" value={form.phone} onChange={updateField} required className="field-input" />
+                </Field>
+              </div>
+              <Field label="Institution">
+                <input name="institution" value={form.institution} onChange={updateField} required className="field-input" />
+              </Field>
+              <Field label="Qualification">
+                <input name="qualification" value={form.qualification} onChange={updateField} required className="field-input" />
+              </Field>
+              <Field label="Address">
+                <textarea name="address" value={form.address} onChange={updateField} required rows="3" className="field-input" />
+              </Field>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Practicing pathologist">
+                  <select name="practicing_pathologist" value={String(form.practicing_pathologist)} onChange={updateField} className="field-input">
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                  </select>
+                </Field>
+                <Field label="Student/Fellow details">
+                  <input name="student_status" value={form.student_status} onChange={updateField} className="field-input" placeholder="Optional" />
+                </Field>
+              </div>
+            </div>
+
+            <div className="grid gap-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <h3 className="font-bold text-primary">Membership and payment</h3>
+              <Field label="Membership type">
+                <select name="membership_type" value={form.membership_type} onChange={updateField} className="field-input">
+                  {!plans.some((plan) => plan.value === form.membership_type) && (
+                    <option value={form.membership_type}>{application.membership_type_label}</option>
+                  )}
+                  {plans.map((plan) => (
+                    <option key={plan.id || plan.value} value={plan.value} disabled={!plan.is_active && plan.value !== form.membership_type}>
+                      {plan.label}{plan.is_active ? ` - ${plan.amountLabel}` : ' (inactive)'}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              {application.status === 'approved' && form.membership_type !== application.membership_type && (
+                <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-semibold leading-5 text-amber-800">
+                  The membership type is changing after approval. Review the membership and bill numbers below before saving; the receipt and certificate will be regenerated.
+                </p>
+              )}
+              <Field label="Interest category">
+                <select name="interest_category" value={form.interest_category} onChange={updateField} className="field-input">
+                  <option value="">Not provided</option>
+                  {!interestCategories.some((category) => category.value === form.interest_category) && form.interest_category && (
+                    <option value={form.interest_category}>{form.interest_category}</option>
+                  )}
+                  {interestCategories.map((category) => (
+                    <option key={category.id || category.slug} value={category.value} disabled={!category.is_active && category.value !== form.interest_category}>
+                      {category.label}{category.is_active ? '' : ' (inactive)'}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Transaction details">
+                <textarea name="transaction_details" value={form.transaction_details} onChange={updateField} required rows="3" className="field-input" />
+              </Field>
+            </div>
+
+            <div className="border-t border-gray-200 pt-4">
+              <h3 className="font-bold text-primary">Approval details</h3>
+            </div>
             <Field label="Status">
               <select name="status" value={form.status} onChange={updateField} className="field-input">
                 <option value="submitted">Submitted</option>
@@ -250,14 +383,16 @@ const AdminMembershipApplicationDetail = () => {
 
             <div className="grid gap-2">
               <p className="text-xs font-semibold leading-5 text-gray-500">
-                Save stores notes, status changes, and manual uploads. Use Approve / assign number for first approval and auto-number generation.
+                Save stores every correction, notes, status changes, and manual uploads. For approved records, relevant corrections regenerate the receipt and certificate automatically. Use Approve / assign number for first approval and auto-number generation.
               </p>
               <button type="submit" disabled={saving} className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-bold text-primary hover:bg-gray-50 disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save notes / uploads'}
+                {saving ? 'Saving...' : 'Save all corrections'}
               </button>
-              <button type="button" onClick={approveApplication} disabled={saving} className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white hover:bg-blue-900 disabled:opacity-50">
-                {saving ? 'Approving...' : 'Approve / assign number'}
-              </button>
+              {application.status !== 'approved' && (
+                <button type="button" onClick={approveApplication} disabled={saving} className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white hover:bg-blue-900 disabled:opacity-50">
+                  {saving ? 'Approving...' : 'Approve / assign number'}
+                </button>
+              )}
               <button type="button" onClick={generateDocuments} disabled={generating || application.status !== 'approved'} className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-bold text-primary hover:bg-gray-50 disabled:opacity-50">
                 {generating ? 'Generating...' : application.receipt_path && application.certificate_path ? 'Regenerate receipt & certificate' : 'Generate receipt & certificate'}
               </button>
@@ -393,5 +528,14 @@ const PanelState = ({ text }) => (
     <p className="mt-3 font-bold text-primary">{text}</p>
   </div>
 );
+
+function hasDocumentChanges(application, form) {
+  const textChanged = (field) => String(application[field] || '').trim() !== String(form[field] || '').trim();
+  return textChanged('applicant_name')
+    || textChanged('membership_type')
+    || textChanged('transaction_details')
+    || textChanged('membership_number')
+    || textChanged('bill_number');
+}
 
 export default AdminMembershipApplicationDetail;

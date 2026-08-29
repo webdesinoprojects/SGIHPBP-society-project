@@ -498,6 +498,8 @@ function friendlyRegistrationError(code, fallbackMessage = '') {
       return 'This registration number is already linked to another account.';
     case 'AD_HOC_NOT_ELIGIBLE':
       return 'Ad Hoc members are not eligible to vote in SGIHPBP elections. Please contact the administrator if this is incorrect.';
+    case 'MEMBERSHIP_GROUP_UNKNOWN':
+      return 'This membership number does not match a recognized SGIHPBP membership group. Please contact the administrator.';
     default:
       return fallbackMessage || 'Registration number could not be verified. Please check the number and try again.';
   }

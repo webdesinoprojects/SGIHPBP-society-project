@@ -9,6 +9,7 @@ import {
   formatNoticeDate,
   listHomeNotices,
   updateHomeNotice,
+  uploadHomeNoticeFlyer,
 } from '../../lib/homeNotices';
 import { AdminStyles, Field, FormActions, StatusBlock } from '../../components/admin/ContentAdminPrimitives';
 import { isSupabaseConfigured, supabase } from '../../lib/supabase';
@@ -20,6 +21,12 @@ const newForm = () => ({
   published_on: new Date().toISOString().slice(0, 10),
   is_published: true,
   sort_order: 0,
+  flyer_url: '',
+  flyer_path: '',
+  flyer_type: '',
+  flyer_provider: '',
+  flyer_file_id: '',
+  flyerFile: null,
 });
 
 const AdminHomeNotices = () => {
@@ -29,6 +36,7 @@ const AdminHomeNotices = () => {
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [fileInputKey, setFileInputKey] = useState(0);
   const [status, setStatus] = useState({ type: null, message: '' });
   const [pendingDelete, setPendingDelete] = useState(null);
 
@@ -54,13 +62,14 @@ const AdminHomeNotices = () => {
   }, [loadAll]);
 
   const updateField = (event) => {
-    const { name, type, checked, value } = event.target;
-    setForm((current) => ({ ...current, [name]: type === 'checkbox' ? checked : value }));
+    const { name, type, checked, value, files } = event.target;
+    setForm((current) => ({ ...current, [name]: files ? files[0] || null : type === 'checkbox' ? checked : value }));
   };
 
   const resetForm = () => {
     setEditingId(null);
     setForm(newForm());
+    setFileInputKey((current) => current + 1);
   };
 
   const edit = (notice) => {
@@ -72,7 +81,14 @@ const AdminHomeNotices = () => {
       published_on: notice.published_on || new Date().toISOString().slice(0, 10),
       is_published: notice.is_published,
       sort_order: notice.sort_order || 0,
+      flyer_url: notice.flyer_url || '',
+      flyer_path: notice.flyer_path || '',
+      flyer_type: notice.flyer_type || '',
+      flyer_provider: notice.flyer_provider || '',
+      flyer_file_id: notice.flyer_file_id || '',
+      flyerFile: null,
     });
+    setFileInputKey((current) => current + 1);
     setStatus({ type: null, message: '' });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -86,11 +102,24 @@ const AdminHomeNotices = () => {
     setSaving(true);
     setStatus({ type: null, message: '' });
     try {
+      let payload = { ...form };
+      if (form.flyerFile) {
+        const flyer = await uploadHomeNoticeFlyer(form.flyerFile);
+        payload = {
+          ...payload,
+          flyer_url: flyer.url,
+          flyer_path: flyer.path,
+          flyer_type: flyer.type,
+          flyer_provider: flyer.provider,
+          flyer_file_id: flyer.fileId,
+        };
+      }
+
       if (editingId) {
-        await updateHomeNotice(editingId, form);
+        await updateHomeNotice(editingId, payload);
         setStatus({ type: 'success', message: 'Homepage notice updated.' });
       } else {
-        await createHomeNotice(form, user?.id);
+        await createHomeNotice(payload, user?.id);
         setStatus({ type: 'success', message: 'Homepage notice published.' });
       }
       resetForm();
@@ -144,6 +173,33 @@ const AdminHomeNotices = () => {
             <Field label="Full message">
               <textarea name="message" value={form.message} onChange={updateField} required rows={9} className="field-input" placeholder="Enter the complete notice. Paragraphs and line breaks will be preserved." />
             </Field>
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <p className="text-sm font-bold text-gray-800">Flyer attachment <span className="font-normal text-gray-400">(optional)</span></p>
+              <p className="mt-1 text-xs text-gray-500">Upload an image/PDF up to 15 MB or paste a direct public link. A selected file takes priority over the link.</p>
+              <div className="mt-3 grid gap-3">
+                <input
+                  key={fileInputKey}
+                  type="file"
+                  name="flyerFile"
+                  accept="image/png,image/jpeg,image/webp,application/pdf"
+                  onChange={updateField}
+                  className="block w-full text-sm text-gray-700 file:mr-4 file:rounded-lg file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-bold file:text-white hover:file:bg-blue-900"
+                />
+                <input type="url" name="flyer_url" value={form.flyer_url} onChange={updateField} className="field-input" placeholder="https://example.com/event-flyer.jpg" />
+                {form.flyer_url && !form.flyerFile && (
+                  <div className="flex flex-wrap items-center gap-3">
+                    <a href={form.flyer_url} target="_blank" rel="noreferrer" className="text-xs font-bold text-primary hover:underline">Open current flyer</a>
+                    <button
+                      type="button"
+                      onClick={() => setForm((current) => ({ ...current, flyer_url: '', flyer_path: '', flyer_type: '', flyer_provider: '', flyer_file_id: '', flyerFile: null }))}
+                      className="text-xs font-bold text-red-700 hover:underline"
+                    >
+                      Remove flyer
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="Category">
                 <select name="notice_type" value={form.notice_type} onChange={updateField} className="field-input">
@@ -182,7 +238,10 @@ const AdminHomeNotices = () => {
                         <span className={`rounded-full px-3 py-1 text-xs font-bold ${notice.is_published ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{notice.is_published ? 'Published' : 'Draft'}</span>
                         <span className="text-xs font-semibold text-gray-500">{notice.notice_type} • {formatNoticeDate(notice.published_on)} • Sort: {notice.sort_order}</span>
                       </div>
-                      <h3 className="mt-2 text-sm font-bold text-gray-900">{notice.title}</h3>
+                      <div className="mt-2 flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-gray-900">{notice.title}</h3>
+                        {notice.flyer_url && <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-700">Flyer attached</span>}
+                      </div>
                       <p className="mt-1 line-clamp-2 whitespace-pre-line text-sm leading-5 text-gray-600">{notice.message}</p>
                     </div>
                     <div className="flex shrink-0 flex-wrap gap-2">

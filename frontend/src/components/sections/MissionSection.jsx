@@ -12,7 +12,7 @@ const MissionSection = () => {
 
   const loadNotices = useCallback(async () => {
     try {
-      setNotices(await listHomeNotices({ limit: 4 }));
+      setNotices(await listHomeNotices({ limit: 12 }));
     } catch (error) {
       console.error('Unable to load homepage notices:', error);
     } finally {
@@ -56,7 +56,7 @@ const MissionSection = () => {
             </motion.div>
           </div>
 
-          <aside className="overflow-hidden rounded-2xl border border-[#d7e1ee] bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800" aria-labelledby="latest-notices-heading">
+          <aside className="self-start overflow-hidden rounded-2xl border border-[#d7e1ee] bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800" aria-labelledby="latest-notices-heading">
             <div className="flex items-center justify-between bg-primary px-6 py-5 text-white">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-yellow-300">Stay informed</p>
@@ -64,7 +64,7 @@ const MissionSection = () => {
               </div>
               <span className="material-icons-outlined text-3xl text-yellow-300" aria-hidden="true">campaign</span>
             </div>
-            <div className="divide-y divide-gray-100 dark:divide-gray-700">
+            <div className="max-h-[30rem] divide-y divide-gray-100 overflow-y-auto overscroll-contain dark:divide-gray-700">
               {loading && <div className="grid min-h-64 place-items-center p-6 text-sm font-semibold text-gray-500">Loading notices...</div>}
               {!loading && notices.map((notice) => (
                 <button key={notice.id} type="button" onClick={() => setSelectedNotice(notice)} className="group block w-full p-5 text-left transition hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary dark:hover:bg-gray-700">
@@ -74,6 +74,7 @@ const MissionSection = () => {
                   </div>
                   <h3 className="mt-2 line-clamp-2 text-base font-bold leading-6 text-primary group-hover:text-blue-700 dark:text-white">{notice.title}</h3>
                   <span className="mt-2 inline-flex items-center gap-1 text-sm font-bold text-primary dark:text-blue-300">
+                    {notice.flyer_url && <span className="material-icons-outlined text-base" aria-hidden="true">attach_file</span>}
                     Read full notice <span className="material-icons-outlined text-base transition group-hover:translate-x-1" aria-hidden="true">arrow_forward</span>
                   </span>
                 </button>
@@ -123,11 +124,49 @@ const NoticeModal = ({ notice, onClose }) => {
           </button>
         </header>
         <div className="max-h-[calc(88vh-7.5rem)] overflow-y-auto px-6 py-6 md:px-8">
+          {notice.flyer_url && <FlyerAttachment notice={notice} />}
           <p className="whitespace-pre-wrap text-base leading-7 text-gray-700 dark:text-gray-200">{notice.message}</p>
         </div>
       </motion.article>
     </motion.div>,
     document.body,
+  );
+};
+
+const FlyerAttachment = ({ notice }) => {
+  const [imageFailed, setImageFailed] = useState(false);
+  const isPdf = notice.flyer_type === 'application/pdf' || /\.pdf(?:$|[?#])/i.test(notice.flyer_url);
+
+  useEffect(() => setImageFailed(false), [notice.flyer_url]);
+
+  if (isPdf || imageFailed) {
+    return (
+      <a
+        href={notice.flyer_url}
+        target="_blank"
+        rel="noreferrer"
+        className="mb-6 flex items-center justify-between gap-4 rounded-xl border border-blue-100 bg-blue-50 p-4 font-bold text-primary transition hover:border-primary"
+      >
+        <span className="flex items-center gap-3">
+          <span className="material-icons-outlined text-2xl" aria-hidden="true">picture_as_pdf</span>
+          Open attached flyer
+        </span>
+        <span className="material-icons-outlined" aria-hidden="true">open_in_new</span>
+      </a>
+    );
+  }
+
+  return (
+    <a href={notice.flyer_url} target="_blank" rel="noreferrer" className="mb-6 block overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+      <img
+        src={notice.flyer_url}
+        alt={`${notice.title} flyer`}
+        className="max-h-[55vh] w-full object-contain"
+        loading="lazy"
+        decoding="async"
+        onError={() => setImageFailed(true)}
+      />
+    </a>
   );
 };
 

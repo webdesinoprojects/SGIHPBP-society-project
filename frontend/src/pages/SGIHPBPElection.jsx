@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import SEO from '../components/SEO';
 import {
   electionRuntimeStatus,
+  formatElectionMembershipGroupCodes,
   formatDateTime,
   listPublicElectionSummaries,
 } from '../lib/elections';
@@ -94,6 +95,9 @@ const ElectionCard = ({ election }) => {
             </span>
           </div>
           <h2 className="mt-3 text-2xl font-bold text-primary">{election.title}</h2>
+          <p className="mt-2 text-xs font-bold uppercase tracking-wide text-primary">
+            Eligible: {formatElectionMembershipGroupCodes(election.eligible_membership_groups)}
+          </p>
           {election.description && (
             <p className="mt-2 max-w-3xl whitespace-pre-wrap text-sm leading-6 text-gray-600">
               {election.description}

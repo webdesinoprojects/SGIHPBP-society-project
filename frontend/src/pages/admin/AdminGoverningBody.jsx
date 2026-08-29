@@ -34,6 +34,14 @@ const emptyForm = {
   imageFile: null,
 };
 
+const ADVISOR_SECTIONS = ['national_advisor', 'international_advisor'];
+const SECTION_LABELS = {
+  office_bearer: 'Office Bearer',
+  governing_member: 'Governing Body Member',
+  national_advisor: 'National Advisor',
+  international_advisor: 'International Advisor',
+};
+
 const AdminGoverningBody = () => {
   const { user } = useAuth();
   const [members, setMembers] = useState([]);
@@ -112,6 +120,13 @@ const AdminGoverningBody = () => {
     setStatus({ type: null, message: '' });
 
     try {
+      if (ADVISOR_SECTIONS.includes(form.section)) {
+        const existingInSection = members.filter((member) => member.section === form.section && member.id !== editingId).length;
+        if (existingInSection >= 20) {
+          throw new Error('A maximum of 20 advisors is allowed in each advisor group.');
+        }
+      }
+
       let imagePayload = {
         image_url: form.image_url,
         image_path: form.image_path,
@@ -120,7 +135,7 @@ const AdminGoverningBody = () => {
       };
 
       if (form.imageFile) {
-        const uploaded = await uploadContentFile(form.imageFile, { folder: 'governing-body/images' });
+        const uploaded = await uploadContentFile(form.imageFile, { folder: 'governing-body/images', fallback: false });
         imagePayload = {
           image_url: uploaded.url,
           image_path: uploaded.path,
@@ -177,7 +192,7 @@ const AdminGoverningBody = () => {
   return (
     <AdminShell
       title="Governing Body"
-      description="Manage office bearers and governing body members shown on the public page."
+      description="Manage office bearers, governing body members, and advisor groups shown on the public page."
       action={editingId && (
         <button type="button" onClick={resetForm} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-primary">
           New member
@@ -197,8 +212,15 @@ const AdminGoverningBody = () => {
               <select name="section" value={form.section} onChange={updateField} className="field-input">
                 <option value="office_bearer">Office Bearer</option>
                 <option value="governing_member">Governing Body Member</option>
+                <option value="national_advisor">National Advisor</option>
+                <option value="international_advisor">International Advisor</option>
               </select>
             </Field>
+            {ADVISOR_SECTIONS.includes(form.section) && (
+              <p className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs font-semibold text-blue-800">
+                {members.filter((member) => member.section === form.section && member.id !== editingId).length} of 20 places currently used in this advisor group.
+              </p>
+            )}
             <Field label="Name"><input name="name" value={form.name} onChange={updateField} required maxLength="180" className="field-input" /></Field>
             <Field label="Position"><input name="position" value={form.position} onChange={updateField} maxLength="160" className="field-input" /></Field>
             <Field label="Registration No. (optional)"><input name="registration_no" value={form.registration_no} onChange={updateField} maxLength="80" className="field-input uppercase" /></Field>
@@ -219,6 +241,10 @@ const AdminGoverningBody = () => {
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-gold-DEFAULT">All members</p>
               <h2 className="mt-1 text-2xl font-bold text-primary">{members.length} entries</h2>
+              <div className="mt-2 flex flex-wrap gap-2 text-xs font-bold">
+                <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-700">National: {members.filter((member) => member.section === 'national_advisor').length}/20</span>
+                <span className="rounded-full bg-purple-50 px-3 py-1 text-purple-700">International: {members.filter((member) => member.section === 'international_advisor').length}/20</span>
+              </div>
             </div>
             <a href="/governing-body" className="text-sm font-bold text-primary hover:underline">Open public page</a>
           </div>
@@ -239,7 +265,7 @@ const AdminGoverningBody = () => {
                           <span className={`rounded-full px-3 py-1 text-xs font-bold ${row.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
                             {row.is_active ? 'Active' : 'Hidden'}
                           </span>
-                          <span className="text-xs font-semibold text-gray-500">{row.section === 'office_bearer' ? 'Office Bearer' : 'Governing Member'}</span>
+                          <span className="text-xs font-semibold text-gray-500">{SECTION_LABELS[row.section] || 'Governing Member'}</span>
                         </div>
                         <p className="mt-2 truncate font-bold text-primary">{row.name}</p>
                         <p className="mt-1 text-xs text-gray-500">{row.position || 'No position'} {row.registration_no ? `- ${row.registration_no}` : ''}</p>

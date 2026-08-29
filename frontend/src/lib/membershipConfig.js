@@ -52,6 +52,22 @@ export const fallbackMembershipPlans = [
     sort_order: 30,
     is_active: true,
   },
+  {
+    value: 'overseas',
+    slug: 'overseas',
+    label: 'Overseas Membership (3 years)',
+    description: 'Three-year overseas membership.',
+    amountLabel: '200 USD',
+    amount: 200,
+    currency: 'USD',
+    durationLabel: 'Per 3 Years',
+    numberPrefix: 'OM',
+    number_prefix: 'OM',
+    validityYears: 3,
+    validity_years: 3,
+    sort_order: 40,
+    is_active: true,
+  },
 ];
 
 export const fallbackMembershipCategories = [

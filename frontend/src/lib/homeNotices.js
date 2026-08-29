@@ -1,6 +1,7 @@
 import { isSupabaseConfigured, supabase } from './supabase';
+import { uploadContentFile } from './contentUpload';
 
-const noticeFields = 'id, title, message, notice_type, published_on, is_published, sort_order, created_at, updated_at';
+const noticeFields = 'id, title, message, notice_type, published_on, is_published, sort_order, flyer_url, flyer_path, flyer_type, flyer_provider, flyer_file_id, created_at, updated_at';
 
 export async function listHomeNotices({ admin = false, limit } = {}) {
   if (!isSupabaseConfigured) return [];
@@ -44,6 +45,41 @@ export async function deleteHomeNotice(id) {
   if (error) throw error;
 }
 
+export async function uploadHomeNoticeFlyer(file) {
+  if (!file) throw new Error('Please choose a flyer file.');
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error('Please use a JPG, PNG, WebP or PDF flyer.');
+  }
+  if (file.size > 15 * 1024 * 1024) {
+    throw new Error('Please use a flyer smaller than 15 MB.');
+  }
+
+  const uploaded = await uploadContentFile(file, { folder: 'home-notices/flyers', fallback: false });
+  return {
+    url: uploaded.url,
+    path: uploaded.path,
+    type: uploaded.mimeType || file.type,
+    provider: uploaded.provider,
+    fileId: uploaded.fileId,
+  };
+}
+
+export function normalizeFlyerUrl(value = '') {
+  const url = String(value).trim();
+  if (!url) return null;
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error('Please enter a valid flyer URL.');
+  }
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    throw new Error('The flyer URL must use HTTP or HTTPS.');
+  }
+  return parsed.toString();
+}
+
 export function formatNoticeDate(value) {
   if (!value) return '';
   return new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${value}T00:00:00`));
@@ -57,5 +93,10 @@ function serialize(input) {
     published_on: input.published_on || new Date().toISOString().slice(0, 10),
     is_published: Boolean(input.is_published),
     sort_order: Number(input.sort_order || 0),
+    flyer_url: normalizeFlyerUrl(input.flyer_url),
+    flyer_path: input.flyer_path || null,
+    flyer_type: input.flyer_type || null,
+    flyer_provider: input.flyer_provider || null,
+    flyer_file_id: input.flyer_file_id || null,
   };
 }

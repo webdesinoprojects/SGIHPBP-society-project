@@ -158,7 +158,7 @@ const AdminMembershipApplications = () => {
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-2">
                         <Link to={`/admin/membership/${application.id}`} className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-bold text-primary hover:bg-gray-50">
-                          Review
+                          {application.status === 'approved' ? 'Edit details' : 'Review / Edit'}
                         </Link>
                         <button type="button" onClick={() => setDeleting(application)} className="rounded-lg border border-red-100 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-50">
                           Delete

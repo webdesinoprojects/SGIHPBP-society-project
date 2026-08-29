@@ -7,6 +7,7 @@ import ElectionStatusPill from '../components/elections/ElectionStatusPill';
 import { useAuth } from '../hooks/useAuth';
 import {
   canVoteInElection,
+  formatElectionMembershipGroupCodes,
   formatDateTime,
   getElectionWithCandidates,
   getPositionVoteUsage,
@@ -88,6 +89,9 @@ const ElectionDetail = () => {
               <p className="safe-wrap mt-3 text-sm font-semibold text-gray-500">
                 {formatDateTime(election.starts_at)} to {formatDateTime(election.ends_at)}
               </p>
+              <p className="safe-wrap mt-2 text-sm font-semibold text-primary">
+                Eligible membership groups: {formatElectionMembershipGroupCodes(election.eligible_membership_groups)}
+              </p>
             </div>
             <div className="max-w-full overflow-hidden rounded-lg border border-gray-200 bg-[#fbfcfe] px-5 py-4">
               <p className="text-xs font-bold uppercase tracking-wide text-gray-500">Your vote</p>
@@ -133,7 +137,15 @@ const ElectionDetail = () => {
           </div>
         ) : (
           <div className="overflow-x-auto rounded-lg border border-gray-100 bg-white shadow-sm">
-            <table className="min-w-full divide-y divide-gray-100 text-sm">
+            <table className="w-full min-w-[900px] table-fixed divide-y divide-gray-100 text-sm">
+              <colgroup>
+                <col className="w-[14%]" />
+                <col className="w-[12%]" />
+                <col className="w-[16%]" />
+                <col className="w-[12%]" />
+                <col className="w-[36%]" />
+                <col className="w-[10%]" />
+              </colgroup>
               <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
                 <tr>
                   <th className="px-4 py-3">Nominee</th>
@@ -146,26 +158,26 @@ const ElectionDetail = () => {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {election.candidates.map((candidate) => (
-                  <tr key={candidate.id} className="hover:bg-gray-50">
+                  <tr key={candidate.id} className="align-top hover:bg-gray-50">
                     <td className="px-4 py-3">
-                      <Link to={`/elections/${election.slug}/candidates/${candidate.slug}`} className="flex items-center gap-3 font-bold text-primary hover:underline">
-                        <CandidateAvatar candidate={candidate} size="sm" />
-                        {candidate.full_name}
+                      <Link to={`/elections/${election.slug}/candidates/${candidate.slug}`} className="flex min-w-0 items-center gap-3 font-bold text-primary hover:underline">
+                        <CandidateAvatar candidate={candidate} size="sm" className="shrink-0" />
+                        <span className="safe-wrap min-w-0">{candidate.full_name}</span>
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{candidate.position}</td>
+                    <td className="safe-wrap px-4 py-3 text-gray-600">{candidate.position}</td>
                     <td className="px-4 py-3 text-gray-600">
-                      <div className="grid gap-1">
-                        {candidate.current_designation && <span>{candidate.current_designation}</span>}
-                        {candidate.institution && <span className="text-xs text-gray-500">{candidate.institution}</span>}
+                      <div className="safe-wrap grid gap-1">
+                        {candidate.current_designation && <span className="safe-wrap">{candidate.current_designation}</span>}
+                        {candidate.institution && <span className="safe-wrap text-xs text-gray-500">{candidate.institution}</span>}
                         {candidate.cv_path && <span className="w-fit rounded-full bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">CV uploaded</span>}
                         {!candidate.current_designation && !candidate.institution && !candidate.cv_path && <span className="text-gray-400">-</span>}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{candidate.registration_no}</td>
-                    <td className="max-w-md px-4 py-3 text-gray-600">{candidate.message || 'No message added'}</td>
-                    <td className="px-4 py-3">
-                      <Link to={`/elections/${election.slug}/candidates/${candidate.slug}`} className="font-bold text-primary hover:underline">
+                    <td className="safe-wrap px-4 py-3 text-gray-600">{candidate.registration_no}</td>
+                    <td className="safe-wrap whitespace-normal px-4 py-3 leading-6 text-gray-600">{candidate.message || 'No message added'}</td>
+                    <td className="px-4 py-3 text-right">
+                      <Link to={`/elections/${election.slug}/candidates/${candidate.slug}`} className="inline-flex whitespace-nowrap font-bold text-primary hover:underline">
                         Open
                       </Link>
                     </td>

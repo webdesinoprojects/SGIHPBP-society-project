@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import AdminShell from '../../components/admin/AdminShell';
 import SEO from '../../components/SEO';
 import ConfirmDialog from '../../components/admin/ConfirmDialog';
@@ -14,6 +14,7 @@ import {
   updateGalleryCategory,
   updateGalleryImage,
   uploadGalleryImage,
+  validateGalleryImageUrl,
 } from '../../lib/gallery';
 
 const emptyCategoryForm = {
@@ -33,6 +34,7 @@ const emptyImageForm = {
   imageFile: null,
   image_url: '',
   image_path: '',
+  imagekit_file_id: '',
   width: null,
   height: null,
 };
@@ -48,17 +50,30 @@ const AdminGallery = () => {
   const [loading, setLoading] = useState(true);
   const [savingCategory, setSavingCategory] = useState(false);
   const [savingImage, setSavingImage] = useState(false);
+  const [imageSource, setImageSource] = useState('file');
   const [status, setStatus] = useState({ type: null, message: '' });
   const [pendingDelete, setPendingDelete] = useState(null);
 
   const loadAll = useCallback(async () => {
-    const [cats, imgs] = await Promise.all([
-      listGalleryCategories({ admin: true }),
-      listGalleryImages({ admin: true }),
-    ]);
-    setCategories(cats);
-    setImages(imgs);
-    setLoading(false);
+    setLoading(true);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 15000);
+    try {
+      const [cats, imgs] = await Promise.all([
+        listGalleryCategories({ admin: true, signal: controller.signal }),
+        listGalleryImages({ admin: true, signal: controller.signal }),
+      ]);
+      setCategories(cats);
+      setImages(imgs);
+    } catch (error) {
+      if (controller.signal.aborted) {
+        throw new Error('Gallery loading timed out. Check your connection and try again.');
+      }
+      throw error;
+    } finally {
+      window.clearTimeout(timeout);
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -67,6 +82,17 @@ const AdminGallery = () => {
       setLoading(false);
     });
   }, [loadAll]);
+
+  useEffect(() => {
+    if (!editingImageId && !imageForm.category_id && categories.length === 1) {
+      setImageForm((current) => ({ ...current, category_id: categories[0].id }));
+    }
+  }, [categories, editingImageId, imageForm.category_id]);
+
+  const uncategorisedCount = useMemo(
+    () => images.filter((image) => !image.category_id).length,
+    [images],
+  );
 
   const updateCategoryField = (event) => {
     const { name, type, checked, value } = event.target;
@@ -134,15 +160,21 @@ const AdminGallery = () => {
       imageFile: null,
       image_url: image.image_url || '',
       image_path: image.image_path || '',
+      imagekit_file_id: image.imagekit_file_id || '',
       width: image.width,
       height: image.height,
     });
+    setImageSource(image.image_path ? 'file' : 'url');
     setStatus({ type: null, message: '' });
   };
 
   const resetImageForm = () => {
     setEditingImageId(null);
-    setImageForm(emptyImageForm);
+    setImageSource('file');
+    setImageForm({
+      ...emptyImageForm,
+      category_id: categories.length === 1 ? categories[0].id : '',
+    });
   };
 
   const saveImage = async (event) => {
@@ -151,25 +183,40 @@ const AdminGallery = () => {
     setStatus({ type: null, message: '' });
 
     try {
+      if (!imageForm.category_id) {
+        throw new Error('Please select an album for this image.');
+      }
+
       let imagePayload = {
         image_url: imageForm.image_url,
         image_path: imageForm.image_path,
+        imagekit_file_id: imageForm.imagekit_file_id,
         width: imageForm.width,
         height: imageForm.height,
       };
 
-      if (imageForm.imageFile) {
+      if (imageSource === 'file' && imageForm.imageFile) {
         const uploaded = await uploadGalleryImage(imageForm.imageFile);
         imagePayload = {
           image_url: uploaded.url,
           image_path: uploaded.path,
+          imagekit_file_id: uploaded.fileId,
           width: uploaded.width,
           height: uploaded.height,
+        };
+      } else if (imageSource === 'url') {
+        const validatedUrl = await validateGalleryImageUrl(imageForm.image_url);
+        imagePayload = {
+          image_url: validatedUrl,
+          image_path: null,
+          imagekit_file_id: null,
+          width: null,
+          height: null,
         };
       }
 
       if (!editingImageId && !imagePayload.image_url) {
-        throw new Error('Please choose an image file.');
+        throw new Error(imageSource === 'url' ? 'Please enter an image URL.' : 'Please choose an image file.');
       }
 
       const payload = { ...imageForm, ...imagePayload };
@@ -205,6 +252,13 @@ const AdminGallery = () => {
     } catch (error) {
       setStatus({ type: 'error', message: friendlyError(error.message, pendingDelete.kind) });
     }
+  };
+
+  const retryLoad = () => {
+    setStatus({ type: null, message: '' });
+    loadAll().catch((error) => {
+      setStatus({ type: 'error', message: error.message || 'Unable to load gallery.' });
+    });
   };
 
   return (
@@ -312,11 +366,18 @@ const AdminGallery = () => {
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-gold-DEFAULT">Images</p>
                 <h2 className="mt-1 text-2xl font-bold text-primary">{images.length} uploads</h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  {images.length - uncategorisedCount} assigned to albums
+                  {uncategorisedCount > 0 ? ` · ${uncategorisedCount} uncategorised` : ''}
+                </p>
               </div>
+              <button type="button" onClick={retryLoad} className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-bold text-primary hover:bg-gray-50">
+                Refresh
+              </button>
             </div>
 
             <div className="mt-5 grid gap-6 xl:grid-cols-[0.75fr_1.25fr]">
-              <form onSubmit={saveImage} className="rounded-lg border border-gray-100 bg-[#fbfcfe] p-5">
+              <form onSubmit={saveImage} className="rounded-lg border border-gray-100 bg-[#fbfcfe] p-5 xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)] xl:self-start xl:overflow-y-auto">
                 <p className="font-bold text-primary">{editingImageId ? 'Edit image' : 'New image'}</p>
                 <div className="mt-4 grid gap-3">
                   <label className="block">
@@ -328,27 +389,44 @@ const AdminGallery = () => {
                     <textarea name="description" value={imageForm.description} onChange={updateImageField} rows="2" maxLength="400" className="field-input" />
                   </label>
                   <label className="block">
-                    <span className="field-label">Category</span>
-                    <select name="category_id" value={imageForm.category_id} onChange={updateImageField} className="field-input">
-                      <option value="">Uncategorised</option>
+                    <span className="field-label">Album</span>
+                    <select name="category_id" value={imageForm.category_id} onChange={updateImageField} required className="field-input">
+                      <option value="">Select an album</option>
                       {categories.map((category) => (
                         <option key={category.id} value={category.id}>{category.name}</option>
                       ))}
                     </select>
                   </label>
-                  <label className="block">
-                    <span className="field-label">{editingImageId ? 'Replace image (optional)' : 'Image file'}</span>
-                    <input
-                      type="file"
-                      name="imageFile"
-                      accept="image/png,image/jpeg,image/webp"
-                      onChange={updateImageField}
-                      className="block w-full text-sm text-gray-700 file:mr-4 file:rounded-lg file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-bold file:text-white hover:file:bg-blue-900"
-                    />
-                    {imageForm.image_url && !imageForm.imageFile && (
-                      <p className="mt-2 text-xs text-gray-500 break-all">Current: {imageForm.image_url}</p>
-                    )}
-                  </label>
+                  <div>
+                    <span className="field-label">Image source</span>
+                    <div className="grid grid-cols-2 rounded-lg bg-gray-100 p-1">
+                      <button type="button" onClick={() => setImageSource('file')} className={`rounded-md px-3 py-2 text-sm font-bold ${imageSource === 'file' ? 'bg-white text-primary shadow-sm' : 'text-gray-500'}`}>Upload file</button>
+                      <button type="button" onClick={() => setImageSource('url')} className={`rounded-md px-3 py-2 text-sm font-bold ${imageSource === 'url' ? 'bg-white text-primary shadow-sm' : 'text-gray-500'}`}>Paste image link</button>
+                    </div>
+                  </div>
+                  {imageSource === 'file' ? (
+                    <label className="block">
+                      <span className="field-label">{editingImageId ? 'Replace image (optional)' : 'Image file'}</span>
+                      <input
+                        type="file"
+                        name="imageFile"
+                        accept="image/png,image/jpeg,image/webp"
+                        onChange={updateImageField}
+                        required={!editingImageId}
+                        className="block w-full text-sm text-gray-700 file:mr-4 file:rounded-lg file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-bold file:text-white hover:file:bg-blue-900"
+                      />
+                      <p className="mt-2 text-xs text-gray-500">JPG, PNG or WebP, maximum 15 MB. Large files are resized for faster loading.</p>
+                      {imageForm.image_url && !imageForm.imageFile && (
+                        <p className="mt-1 text-xs text-gray-500 break-all">Current: {imageForm.image_url}</p>
+                      )}
+                    </label>
+                  ) : (
+                    <label className="block">
+                      <span className="field-label">Direct public image URL</span>
+                      <input type="url" name="image_url" value={imageForm.image_url} onChange={updateImageField} required className="field-input" placeholder="https://example.com/photo.jpg" />
+                      <p className="mt-2 text-xs text-gray-500">The link must open the image directly without requiring sign-in.</p>
+                    </label>
+                  )}
                   <div className="grid grid-cols-2 gap-3">
                     <label className="block">
                       <span className="field-label">Sort order</span>
@@ -370,12 +448,10 @@ const AdminGallery = () => {
                 </div>
               </form>
 
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-2 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto xl:pr-2">
                 {images.map((image) => (
                   <article key={image.id} className="rounded-lg border border-gray-100 bg-white p-3 shadow-sm">
-                    <div className="aspect-[4/3] overflow-hidden rounded-md bg-gray-100">
-                      <img src={image.image_url} alt={image.title} className="h-full w-full object-cover" loading="lazy" />
-                    </div>
+                    <GalleryImagePreview image={image} />
                     <div className="mt-3">
                       <p className="font-bold text-primary">{image.title}</p>
                       <p className="text-xs text-gray-500">{image.category?.name || 'Uncategorised'}</p>
@@ -432,12 +508,47 @@ const PanelState = ({ text }) => (
   </div>
 );
 
+const GalleryImagePreview = ({ image }) => {
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => setFailed(false), [image.image_url]);
+
+  return (
+    <div className="aspect-[4/3] overflow-hidden rounded-md bg-gray-100">
+      {failed ? (
+        <div className="flex h-full flex-col items-center justify-center gap-2 p-4 text-center text-gray-500">
+          <span className="material-symbols-outlined text-3xl">broken_image</span>
+          <p className="text-sm font-bold">Image link is unavailable</p>
+          <p className="text-xs">Use Edit to replace the file or link.</p>
+        </div>
+      ) : (
+        <img
+          src={image.image_url}
+          alt={image.title}
+          className="h-full w-full object-cover"
+          loading="lazy"
+          decoding="async"
+          onError={() => setFailed(true)}
+        />
+      )}
+    </div>
+  );
+};
+
 function friendlyError(message = '', kind = 'item') {
   const normalized = message.toLowerCase();
   if (normalized.includes('row-level security')) return `You do not have permission to manage this ${kind}.`;
   if (normalized.includes('duplicate') || normalized.includes('unique')) return `A ${kind} with the same slug already exists.`;
-  if (normalized.includes('please choose')) return message;
-  if (normalized.includes('storage') || normalized.includes('bucket')) return `Upload failed. Use JPG, PNG or WebP under the size limit (10 MB).`;
+  if (
+    normalized.includes('please choose')
+    || normalized.includes('please select')
+    || normalized.includes('image url')
+    || normalized.includes('image link')
+    || normalized.includes('smaller than')
+    || normalized.includes('jpg')
+  ) return message;
+  if (normalized.includes('storage') || normalized.includes('bucket')) return `Upload failed. Use JPG, PNG or WebP under the size limit (15 MB).`;
+  if (normalized.includes('imagekit')) return 'ImageKit upload failed. Check its configuration and try again.';
   return `The ${kind} could not be saved. Please check the form and try again.`;
 }
 

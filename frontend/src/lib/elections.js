@@ -8,6 +8,8 @@ export const voteMessages = {
   ALREADY_VOTED: 'You have already voted for this nominee.',
   POSITION_VOTE_LIMIT_REACHED: 'You have already used the allowed votes for this post.',
   AD_HOC_NOT_ELIGIBLE: 'Ad Hoc members are not eligible to vote in SGIHPBP elections. Please contact the administrator if this is incorrect.',
+  MEMBERSHIP_GROUP_NOT_ELIGIBLE: 'Your membership group is not eligible to vote in this election.',
+  MEMBERSHIP_GROUP_UNKNOWN: 'Your membership number could not be matched to an eligible membership group.',
   AUTH_REQUIRED: 'Please log in before voting.',
   PROFILE_NOT_ALLOWED: 'This account is not eligible to vote.',
   PROFILE_INCOMPLETE: 'Complete your voter profile with name, registration number and photo before voting.',
@@ -17,6 +19,21 @@ export const voteMessages = {
   ELECTION_ENDED: 'Voting has ended for this election.',
   CANDIDATE_NOT_FOUND: 'This nominee could not be found.',
 };
+
+export const electionMembershipGroups = [
+  { value: 'gm', code: 'GM', label: 'Life Members' },
+  { value: 'fm', code: 'FM', label: 'Founder Members' },
+  { value: 'adm', code: 'AdM', label: 'Ad Hoc Members' },
+  { value: 'om', code: 'OM', label: 'Overseas Members' },
+  { value: 'alm', code: 'ALM', label: 'Associate Life Members' },
+];
+
+export const defaultElectionMembershipGroups = ['gm', 'fm'];
+
+export function formatElectionMembershipGroupCodes(groups) {
+  const selected = normalizeEligibleMembershipGroups(groups);
+  return selected.map((value) => electionMembershipGroups.find((group) => group.value === value)?.code || value.toUpperCase()).join(', ');
+}
 
 export function slugify(value) {
   const slug = String(value || '')
@@ -33,7 +50,18 @@ export function normalizeRegistrationNo(value) {
 }
 
 export function isAdHocRegistration(registrationNo) {
-  return normalizeRegistrationNo(registrationNo).startsWith('AH');
+  return registrationMembershipGroup(registrationNo) === 'adm';
+}
+
+export function registrationMembershipGroup(registrationNo) {
+  const value = normalizeRegistrationNo(registrationNo).replace(/[^A-Z0-9]/g, '');
+  if (!value) return '';
+  if (/ADM\d{4}$/.test(value) || /^AH\d/.test(value)) return 'adm';
+  if (/ALM\d{4}$/.test(value)) return 'alm';
+  if (/FM\d{4}$/.test(value)) return 'fm';
+  if (/OM\d{4}$/.test(value)) return 'om';
+  if (/GM\d{4}$/.test(value) || /^L\d/.test(value)) return 'gm';
+  return '';
 }
 
 export const defaultElectionVoteLimits = [
@@ -123,7 +151,11 @@ export function electionRuntimeStatus(election) {
 export function canVoteInElection(election, profile, vote, candidate = null) {
   const runtimeStatus = electionRuntimeStatus(election);
   const completeProfile = Boolean(profile?.full_name && profile?.registration_no && profile?.photo_path);
-  const adHocNotEligible = isAdHocRegistration(profile?.registration_no);
+  const membershipGroup = registrationMembershipGroup(profile?.registration_no);
+  const eligibleMembershipGroups = election?.eligible_membership_groups?.length
+    ? election.eligible_membership_groups
+    : defaultElectionMembershipGroups;
+  const membershipGroupEligible = Boolean(membershipGroup && eligibleMembershipGroups.includes(membershipGroup));
   const voteGroup = normalizeVoteGroup(vote);
   const positionKey = candidate ? electionPositionKey(candidate.position) : null;
   const candidateVote = candidate ? voteGroup.byCandidate?.[candidate.id] : null;
@@ -132,7 +164,7 @@ export function canVoteInElection(election, profile, vote, candidate = null) {
   const positionLimitReached = Boolean(candidate && positionVotes.length >= maxVotes);
 
   return {
-    allowed: runtimeStatus === 'active' && completeProfile && !adHocNotEligible && !candidateVote && !positionLimitReached,
+    allowed: runtimeStatus === 'active' && completeProfile && membershipGroupEligible && !candidateVote && !positionLimitReached,
     runtimeStatus,
     completeProfile,
     candidateVote,
@@ -140,13 +172,16 @@ export function canVoteInElection(election, profile, vote, candidate = null) {
     positionVotes,
     maxVotes,
     positionLimitReached,
-    adHocNotEligible,
+    membershipGroup,
+    membershipGroupEligible,
     reason: candidateVote
       ? 'You have already voted for this nominee.'
       : positionLimitReached
         ? `You have already used ${maxVotes} vote${maxVotes === 1 ? '' : 's'} for ${candidate.position}.`
-        : adHocNotEligible
-          ? voteMessages.AD_HOC_NOT_ELIGIBLE
+        : completeProfile && !membershipGroup
+          ? voteMessages.MEMBERSHIP_GROUP_UNKNOWN
+          : completeProfile && !membershipGroupEligible
+            ? voteMessages.MEMBERSHIP_GROUP_NOT_ELIGIBLE
           : !completeProfile
             ? 'Complete your voter profile before voting.'
             : runtimeStatus !== 'active'
@@ -186,6 +221,7 @@ export async function listElections({ admin = false } = {}) {
       title,
       description,
       status,
+      eligible_membership_groups,
       starts_at,
       ends_at,
       created_at,
@@ -237,7 +273,7 @@ export async function listPublicElectionSummaries({ limit = 20 } = {}) {
 
   let query = supabase
     .from('elections')
-    .select('id,slug,title,description,status,starts_at,ends_at,created_at,updated_at')
+    .select('id,slug,title,description,status,eligible_membership_groups,starts_at,ends_at,created_at,updated_at')
     .neq('status', 'draft')
     .neq('status', 'archived')
     .order('starts_at', { ascending: true, nullsFirst: false });
@@ -272,6 +308,7 @@ export async function getElectionWithCandidates(slug) {
       title,
       description,
       status,
+      eligible_membership_groups,
       starts_at,
       ends_at,
       created_at,
@@ -379,6 +416,7 @@ export async function createElection(input, userId) {
     title: input.title.trim(),
     description: input.description?.trim() || null,
     status: input.status,
+    eligible_membership_groups: normalizeEligibleMembershipGroups(input.eligible_membership_groups),
     starts_at: fromDateTimeLocal(input.starts_at),
     ends_at: fromDateTimeLocal(input.ends_at),
     created_by: userId,
@@ -399,6 +437,7 @@ export async function updateElection(id, input) {
     title: input.title.trim(),
     description: input.description?.trim() || null,
     status: input.status,
+    eligible_membership_groups: normalizeEligibleMembershipGroups(input.eligible_membership_groups),
     starts_at: fromDateTimeLocal(input.starts_at),
     ends_at: fromDateTimeLocal(input.ends_at),
   };
@@ -692,8 +731,10 @@ export async function listElectionVotes(electionId) {
   }));
 }
 
-export async function countActiveVoters() {
-  const { data, error } = await supabase.rpc('count_active_voting_profiles');
+export async function countActiveVoters(electionSlug = '') {
+  const { data, error } = electionSlug
+    ? await supabase.rpc('count_election_eligible_profiles', { p_election_slug: electionSlug })
+    : await supabase.rpc('count_active_voting_profiles');
 
   if (error) throw error;
   return Number(data || 0);
@@ -782,11 +823,18 @@ function normalizeElectionRecord(record) {
 
   return {
     ...record,
+    eligible_membership_groups: normalizeEligibleMembershipGroups(record.eligible_membership_groups),
     candidates,
     vote_limits: Array.from(limitMap.values()).sort((a, b) => (a.sort_order - b.sort_order) || a.position_label.localeCompare(b.position_label)),
     election_candidates: undefined,
     election_vote_limits: undefined,
   };
+}
+
+function normalizeEligibleMembershipGroups(groups) {
+  const allowed = new Set(electionMembershipGroups.map((group) => group.value));
+  const normalized = Array.from(new Set((Array.isArray(groups) ? groups : []).filter((group) => allowed.has(group))));
+  return normalized.length ? normalized : [...defaultElectionMembershipGroups];
 }
 
 async function uniqueElectionSlug(baseSlug) {

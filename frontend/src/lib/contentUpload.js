@@ -14,6 +14,8 @@ export async function uploadContentFile(file, { folder = 'content', fallback = t
       logDevWarn('ImageKit upload failed, trying Supabase fallback:', error);
       if (!fallback) throw error;
     }
+  } else if (!fallback) {
+    throw new Error('ImageKit is not configured for uploads.');
   }
 
   return uploadToSupabase(file, folder);

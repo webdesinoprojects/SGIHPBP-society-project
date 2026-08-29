@@ -28,7 +28,7 @@ const AdminTurnout = () => {
       ? await getElectionWithCandidates(electionSlug)
       : rows.find((row) => electionRuntimeStatus(row) === 'active') || rows[0] || null;
     const voteRows = selected ? await listElectionVotes(selected.id) : [];
-    const voters = await countActiveVoters();
+    const voters = selected ? await countActiveVoters(selected.slug) : 0;
 
     setElections(rows);
     setElection(selected);
