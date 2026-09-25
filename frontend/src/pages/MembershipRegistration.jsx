@@ -5,6 +5,7 @@ import SEO from '../components/SEO';
 import MarkdownBlock from '../components/common/MarkdownBlock';
 import PaymentQR from '../images/qr.png';
 import { logDevError } from '../lib/logger';
+import { getPhoneValidationError, normalizePhoneNumber } from '../lib/phone';
 import {
   lookupMembershipStatus,
   membershipStatusLabels,
@@ -199,19 +200,11 @@ const MembershipRegistration = () => {
       isValid = false;
     }
 
-    // Phone validation - must be exactly 10 digits
-    if (!formData.Phone.trim()) {
-      tempErrors.Phone = "Phone number is required";
+    // Accept domestic and international phone numbers independently of membership type.
+    const phoneError = getPhoneValidationError(formData.Phone);
+    if (phoneError) {
+      tempErrors.Phone = phoneError;
       isValid = false;
-    } else {
-      const cleanPhone = formData.Phone.replace(/\D/g, '');
-      if (cleanPhone.length !== 10) {
-        tempErrors.Phone = "Phone number must be exactly 10 digits";
-        isValid = false;
-      } else if (!/^[6-9]/.test(cleanPhone)) {
-        tempErrors.Phone = "Invalid phone number (must start with 6-9)";
-        isValid = false;
-      }
     }
 
     // Address validation
@@ -270,7 +263,7 @@ const MembershipRegistration = () => {
         student_status: formData.StudentStatus,
         address: formData.Address,
         email: formData.Email,
-        phone: formData.Phone,
+        phone: normalizePhoneNumber(formData.Phone),
         membership_type: formData.MembershipType,
         transaction_details: formData.TransactionDetails,
         interest_category: formData.Interest,
@@ -490,9 +483,9 @@ const MembershipRegistration = () => {
                             value={formData.Phone} 
                             onChange={handleChange} 
                             className={`form-input ${errors.Phone ? 'border-red-500' : ''}`} 
-                            maxLength="15"
-                            placeholder="10-digit phone number"
-                            pattern="[0-9]*"
+                            maxLength="30"
+                            placeholder="Phone number with country code (e.g. +1 212 555 1234)"
+                            autoComplete="tel"
                           />
                           {errors.Phone && <p className="text-red-500 text-xs mt-1">{errors.Phone}</p>}
                       </div>
